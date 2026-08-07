@@ -1,0 +1,209 @@
+---
+diff for: .env.example
+--- /dev/null	2026-08-03 09:33:18.175514100 +0200
++++ .env.example	2026-08-03 10:10:01.836653900 +0200
+@@ -0,0 +1,35 @@
++# Application environment variables (example)
++# Do NOT store real secrets here. Replace placeholders in your deployments.
++
++# App runtime
++NODE_ENV=production            # one of 'production'|'development'|'test'
++PORT=3000
++
++# Database
++# Replace with your database connection string. Example formats:
++# postgres://user:pass@host:5432/dbname
++DATABASE_URL=postgres://user:password@localhost:5432/creapy_db
++
++# Authentication
++# Provide a strong JWT secret in real deployments (do NOT commit actual secrets)
++JWT_SECRET=your_jwt_secret_here
++
++# Storage
++STORAGE_PROVIDER=local        # 'local' or 's3'
++UPLOADS_DIR=/srv/uploads
++# If using S3, configure the following (examples commented out):
++# S3_BUCKET=your-bucket-name
++S3_REGION=us-east-1
++S3_PUBLIC_BASE_URL=https://cdn.example.com
++
++# Frontend / URLs
++APP_BASE_URL=http://localhost:3000
++FRONTEND_URL=http://localhost:3000
++
++# Payment
++# For production, set STRIPE_SECRET_KEY in production env (commented here)
++# STRIPE_SECRET_KEY=sk_live_...
++PAYMENT_PROVIDER=mock
++
++# Misc
++# Keep other third-party keys commented or set in secure vaults
+---
+diff for: .env.production.example
+--- /dev/null	2026-08-03 09:33:18.175514100 +0200
++++ .env.production.example	2026-08-03 10:10:01.840542800 +0200
+@@ -0,0 +1,31 @@
++# Production environment example
++# IMPORTANT: Do NOT store real secrets in this repository. Use your secret manager.
++
++NODE_ENV=production
++PORT=3000
++
++# Database URL - set to your production DB
++DATABASE_URL=postgres://<prod_user>:<prod_password>@<prod_host>:5432/<prod_db>
++
++# JWT secret must be a strong random value in production
++JWT_SECRET=<PRODUCTION_JWT_SECRET>
++
++# Use S3 or a cloud storage provider in production
++STORAGE_PROVIDER=s3
++# S3_BUCKET should be set in your deployment environment
++# S3_BUCKET=your-production-bucket
++S3_REGION=us-east-1
++S3_PUBLIC_BASE_URL=https://cdn.yourdomain.com
++UPLOADS_DIR=/srv/uploads    # local path (used when STORAGE_PROVIDER=local)
++
++# Frontend base URL (public)
++APP_BASE_URL=https://app.yourdomain.com
++FRONTEND_URL=https://app.yourdomain.com
++
++# Payment provider - set real keys in secret manager
++# STRIPE_SECRET_KEY=sk_live_...
++PAYMENT_PROVIDER=stripe
++
++# Notes:
++# - Replace all <placeholders> with real values on deployment.
++# - Keep secrets only in your secret management system or environment, not in git.
+---
+diff for: .env.development.example
+--- /dev/null	2026-08-03 09:33:18.175514100 +0200
++++ .env.development.example	2026-08-03 10:10:01.840542800 +0200
+@@ -0,0 +1,24 @@
++# Development environment example
++NODE_ENV=development
++PORT=3000
++
++# Local Postgres (change as needed)
++DATABASE_URL=postgres://dev_user:dev_password@localhost:5432/creapy_dev
++
++# Use a weak/local JWT secret for convenience in development only
++JWT_SECRET=dev_jwt_secret
++
++# Local storage for uploaded files during development
++STORAGE_PROVIDER=local
++UPLOADS_DIR=/srv/uploads
++S3_REGION=us-east-1
++S3_PUBLIC_BASE_URL=http://localhost:3000/uploads
++
++# Frontend URL used for CORS and links
++APP_BASE_URL=http://localhost:3000
++FRONTEND_URL=http://localhost:3000
++
++# Use mock payment provider in development
++PAYMENT_PROVIDER=mock
++# STRIPE_SECRET_KEY left commented in dev
++# STRIPE_SECRET_KEY=
+---
+diff for: backend/.env.example
+--- /dev/null	2026-08-03 09:33:18.175514100 +0200
++++ backend/.env.example	2026-08-03 10:11:06.669609100 +0200
+@@ -0,0 +1,61 @@
++# Backend-specific environment variables (example)
++# Sanitized example: DO NOT commit real secrets. Replace with values from your
++# secret manager or CI/CD environment.
++
++NODE_ENV=production
++PORT=5000
++
++# Database connection for backend
++# Example format: postgres://user:password@host:5432/dbname
++DATABASE_URL=postgres://user:password@hostname:5432/creapy_db
++
++# Authentication
++# Use a strong, random JWT secret in production
++JWT_SECRET=your_jwt_secret_here
++JWT_EXPIRES_IN=7d
++
++# CORS / Frontend
++FRONTEND_URL=https://app.example.com
++CORS_ALLOWED_ORIGINS=https://app.example.com https://example.com
++
++# Payments - set to 'stripe'|'paynow'|'mock'
++PAYMENT_PROVIDER=mock
++# STRIPE_SECRET_KEY=sk_live_... (set in production secrets)
++# PAYNOW_INTEGRATION_ID=
++# PAYNOW_INTEGRATION_KEY=
++
++# Email (Gmail / Nodemailer)
++# GMAIL_USER=
++# GMAIL_APP_PASSWORD=
++EMAIL_FROM=no-reply@example.com
++
++# SMS (Africa's Talking) - optional
++SMS_ENABLED=false
++SMS_PROVIDER=
++AT_API_KEY=
++AT_USERNAME=
++AT_SENDER_ID=
++
++# Push notifications (VAPID) - optional
++VAPID_PUBLIC_KEY=
++VAPID_PRIVATE_KEY=
++VAPID_SUBJECT=mailto:support@example.com
++
++# S3 File Uploads (optional)
++# S3_BUCKET=your-bucket-name
++S3_PUBLIC_BASE_URL=https://cdn.example.com
++S3_REGION=us-east-1
++
++# Uploads (local fallback)
++STORAGE_PROVIDER=local
++UPLOADS_DIR=/srv/uploads
++
++# App base URL
++APP_BASE_URL=https://api.example.com
++
++# Feature flags and tuning
++SKIP_EMAIL_VERIFICATION=false
++
++# Notes:
++# - Replace placeholders with real values in your deployment environment.
++# - Never commit secrets into the repository.
+---
+diff for: docker/nginx/default.conf
+--- /dev/null	2026-08-03 09:33:18.175514100 +0200
++++ docker/nginx/default.conf	2026-08-03 10:11:47.426981000 +0200
+@@ -0,0 +1,33 @@
++server {
++    listen 80;
++    server_name _;
++
++    # Serve static uploads
++    location /uploads/ {
++        alias /srv/uploads/;
++        autoindex off;
++        sendfile on;
++        # prevent access to hidden files
++        location ~ /\. { deny all; }
++    }
++
++    # Proxy API requests to backend service
++    location /api/ {
++        proxy_pass http://backend:5000/;
++        proxy_http_version 1.1;
++        proxy_set_header Host $host;
++        proxy_set_header X-Real-IP $remote_addr;
++        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
++        proxy_set_header X-Forwarded-Proto $scheme;
++        proxy_set_header X-Forwarded-Host $host;
++        proxy_set_header X-Forwarded-Port $server_port;
++        proxy_set_header Connection "";
++        proxy_buffering off;
++    }
++
++    # Optional: serve frontend or other locations as needed
++    location / {
++        return 200 'OK';
++        add_header Content-Type text/plain;
++    }
++}

@@ -1,0 +1,25 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 20 && nvm use 20
+        - npm ci
+    build:
+      commands:
+        - env | grep -E '^(DATABASE_URL|JWT_SECRET|JWT_EXPIRES_IN|NODE_ENV|FRONTEND_URL|CORS_ALLOWED_ORIGINS|APP_BASE_URL|PAYMENT_PROVIDER|SMS_PROVIDER|PAYNOW_INTEGRATION_ID|PAYNOW_INTEGRATION_KEY|PAYNOW_RESULT_URL|PAYNOW_RETURN_URL|LISTING_FEE_AMOUNT|TENANT_PREMIUM_AMOUNT|GMAIL_USER|GMAIL_APP_PASSWORD|EMAIL_FROM|S3_BUCKET|S3_REGION|S3_PUBLIC_BASE_URL|S3_BROWSER_ENDPOINT|S3_BROWSER_FORCE_PATH_STYLE|S3_ACCESS_KEY_ID|S3_SECRET_ACCESS_KEY|TOKEN_PAYER_ROLE|SKIP_EMAIL_VERIFICATION|SEED_API_KEY)=' > .env || true
+        - npx prisma generate
+        - npx prisma migrate deploy
+        - rm -rf .amplify-hosting
+        - mkdir -p .amplify-hosting/compute/default
+        - cp deploy-manifest.json .amplify-hosting/deploy-manifest.json
+        - find . -maxdepth 1 -not -name '.' -not -name 'node_modules' -not -name '.amplify-hosting' -not -name '.git' | xargs -I{} cp -r {} .amplify-hosting/compute/default/
+        - npm ci --omit=dev --prefix .amplify-hosting/compute/default
+  artifacts:
+    baseDirectory: .amplify-hosting
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - .amplify-hosting/compute/default/node_modules/**/*

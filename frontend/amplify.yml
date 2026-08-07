@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - env | grep -E '^(REACT_APP_API_URL|REACT_APP_BACKEND_URL|REACT_APP_FIREBASE_API_KEY|REACT_APP_TOKEN_PAYER_ROLE|REACT_APP_LISTING_FEE_AMOUNT|REACT_APP_TENANT_PREMIUM_AMOUNT|DISABLE_ESLINT_PLUGIN)=' > .env.production
+        - npm run build
+  artifacts:
+    baseDirectory: build
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+redirects:
+  - source: </^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>
+    target: /index.html
+    status: "200"

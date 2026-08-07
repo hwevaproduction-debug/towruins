@@ -1,0 +1,45 @@
+export const FALLBACK_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1920&q=80",
+];
+
+export const AUTH_CARD_SX = {
+  width: { xs: "calc(100vw - 32px)", sm: "480px", md: "480px" },
+  maxWidth: "480px",
+  mx: "auto",
+  flexShrink: 0,
+  maxHeight: "calc(100vh - 104px)",
+  overflowY: "auto",
+  p: { xs: 3, md: "48px 52px" },
+  borderRadius: "28px",
+  background: "rgba(252, 253, 253, 0.72)",
+  backdropFilter: "blur(28px)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  boxShadow: "0 48px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)",
+  position: "relative",
+  zIndex: 2,
+  scrollbarWidth: "thin",
+  scrollbarColor: "#B8975A transparent",
+  "&::-webkit-scrollbar": { width: "4px" },
+  "&::-webkit-scrollbar-track": { background: "transparent" },
+  "&::-webkit-scrollbar-thumb": { background: "#B8975A", borderRadius: "4px" },
+} as const;
+
+export const AUTH_PAGE_WRAPPER_SX = {
+  position: "fixed" as const,
+  top: "72px",
+  right: 0,
+  bottom: 0,
+  left: 0,
+  zIndex: 10,
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "center",
+  justifyContent: "center",
+  px: "16px",
+  py: "16px",
+  background: "#ffffff",
+};

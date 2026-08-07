@@ -1,0 +1,7 @@
+export const FEATURE_FLAGS = {
+  FEATURED_LISTINGS: false,
+  PREMIUM_VISIBILITY_BOOSTS: false,
+  PHONE_VERIFICATION: false,
+  ID_VERIFICATION: false,
+  PUBLIC_ROADMAP: false,
+} as const;

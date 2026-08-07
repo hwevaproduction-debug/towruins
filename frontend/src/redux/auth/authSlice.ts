@@ -1,0 +1,83 @@
+// Redux Toolkit Imports
+import { createSlice } from "@reduxjs/toolkit";
+// Custom Imports
+import type { RootState } from "../store";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getStringProperty = (
+  value: Record<string, unknown> | undefined,
+  key: string
+) => {
+  const property = value?.[key];
+  return typeof property === "string" && property.length > 0 ? property : null;
+};
+
+export const getAuthUserId = (authUser: unknown) => {
+  if (!isRecord(authUser)) return null;
+
+  const data = isRecord(authUser.data) ? authUser.data : undefined;
+  const nestedUser = data && isRecord(data.user) ? data.user : undefined;
+
+  return (
+    getStringProperty(nestedUser, "_id") ||
+    getStringProperty(nestedUser, "id") ||
+    getStringProperty(nestedUser, "email") ||
+    getStringProperty(data, "_id") ||
+    getStringProperty(data, "id") ||
+    getStringProperty(data, "email") ||
+    getStringProperty(authUser, "_id") ||
+    getStringProperty(authUser, "id") ||
+    getStringProperty(authUser, "email")
+  );
+};
+
+const getInitialUser = () => {
+  const localStorageItem = localStorage.getItem("user");
+  if (localStorageItem) {
+    return JSON.parse(localStorageItem);
+  } else {
+    return null;
+  }
+};
+
+const authSlice = createSlice({
+  name: "auth",
+  initialState: {
+    user: getInitialUser(),
+  },
+  reducers: {
+    setUser(state, action) {
+      state.user = action.payload;
+    },
+  },
+});
+
+export const { setUser } = authSlice.actions;
+export default authSlice.reducer;
+
+export const selectedUserId = (state: RootState) =>
+  state.auth?.user?.data?.user?._id;
+export const selectedUserToken = (state: RootState) =>
+  state.auth?.user?.token;
+export const selectedUserName = (state: RootState) =>
+  state.auth?.user?.data?.user?.username;
+export const selectedUserEmail = (state: RootState) =>
+  state.auth?.user?.data?.user?.email;
+export const selectedUserAvatar = (state: RootState) =>
+  state.auth?.user?.data?.user?.avatar;
+
+export const selectedUserRole = (state: RootState) =>
+  state.auth?.user?.data?.user?.role;
+
+export const selectedIsEmailVerified = (state: RootState) =>
+  state.auth?.user?.data?.user?.isEmailVerified ?? false;
+
+export const selectedUserPremiumExpiry = (state: RootState) =>
+  state.auth?.user?.data?.user?.premiumExpiry;
+
+export const selectedCanPublishListing = (state: RootState) => {
+  const role = state.auth?.user?.data?.user?.role;
+  return role === 'landlord';
+};

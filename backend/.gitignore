@@ -1,0 +1,16 @@
+node_modules
+
+seed
+!seed/
+!seed/seed.js
+
+/dist
+.env.example
+.env
+cshellscript.bat
+*.zip
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

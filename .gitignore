@@ -1,0 +1,15 @@
+
+/leodits/
+.env
+.env.*
+!.env.example
+backend/.env.example
+*.example
+backend/.env.example
+*.mdc
+*.md
+*.md
+!docs/domain/TOKEN_ECONOMY.md
+!docs/CHANGELOG.md
+!AGENTS.md
+/_aside_docs_pre_submodule

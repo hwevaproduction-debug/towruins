@@ -1,0 +1,6 @@
+[submodule "docs"]
+	path = docs
+	url = https://github.com/hwevaproduction-debug/TownRuins-Docs.git
+[submodule "content"]
+	path = content
+	url = https://github.com/hwevaproduction-debug/TownRuins-Docs.git
