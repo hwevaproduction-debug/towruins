@@ -149,6 +149,29 @@ app.get("/", (req, res) => {
   res.status(200).json({ status: "ok", message: "Town Ruins API is running." });
 });
 
+// Internal endpoint to capture the effective client IP seen by Express (trusted proxy honored)
+// Protected by E2E_ACCESS_TOKEN when set. If E2E_ACCESS_TOKEN is not set, the endpoint is available (use cautiously).
+app.get("/internal/e2e-ip", (req, res) => {
+  try {
+    const token = process.env.E2E_ACCESS_TOKEN;
+    if (token && req.get('x-e2e-access-token') !== token) {
+      // Hide the endpoint when token is set to avoid accidental public exposure
+      return res.status(404).end();
+    }
+
+    // Express respects app.set('trust proxy', 1) so req.ip reflects the client IP forwarded by nginx
+    let ip = req.ip || (req.connection && req.connection.remoteAddress) || "";
+    if (typeof ip === 'string' && ip.startsWith('::ffff:')) {
+      ip = ip.split('::ffff:')[1];
+    }
+    const xff = req.get('x-forwarded-for') || '';
+    console.log(`[e2e-ip] ${new Date().toISOString()} ip=${ip} x-forwarded-for=${xff} path=${req.originalUrl} method=${req.method}`);
+    return res.status(200).json({ ipSeen: ip, xForwardedFor: xff });
+  } catch (err) {
+    return res.status(500).json({ error: 'internal' });
+  }
+});
+
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
