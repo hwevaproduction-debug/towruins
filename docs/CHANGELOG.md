@@ -1,5 +1,54 @@
 # 26
 
+## 0808
+
+### 1214
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1214                                   |
+| Date       | 0808                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Focused Verified                     |
+| Validation | Focused passed; unit tests passed      |
+| Scope      | Backend authorization middleware       |
+
+#### Summary
+Fixed authorization middleware so 'super_admin' users are granted access to routes that require 'admin' privileges (e.g., /api/v1/providers, /api/v1/bookings) without weakening role checks.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/controllers/authController.js   |
+| Modified | docs/CHANGELOG.md                       |
+
+#### Detailed Changes
+
+| Category | Description |
+| -------- | ----------- |
+| Auth     | requireRole now treats 'admin' as inclusive of 'super_admin' so super-admin accounts retain admin access. |
+| Security | No endpoints made public; checks remain role-based. |
+
+#### Repository Validation
+
+| Check                  | Result |
+| ---------------------- | ------ |
+| Backend unit tests     | ✅      |
+| E2E (production target)| ❌ blocked by SKIP_EMAIL_VERIFICATION not set on target; ran against production and reproduced issue prior to fix |
+| Compose config         | N/A    |
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | main               |
+| Commit(s)      | 52bb238            |
+| Generated From | git diff + git log |
+
+
 ## 0608
 
 ### 2037
