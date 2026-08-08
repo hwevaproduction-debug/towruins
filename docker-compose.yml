@@ -92,7 +92,7 @@ services:
       - "80"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --timeout=2 --tries=1 http://localhost/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- --timeout=2 --tries=1 http://127.0.0.1/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5
