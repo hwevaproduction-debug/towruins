@@ -153,7 +153,7 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
             <Typography variant="h6" gutterBottom>You don't have an accommodation set up yet</Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>Providers must set up an accommodation before creating listings. Go to your Provider Dashboard to create and configure your accommodation, then return here to continue creating a listing.</Typography>
             <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-              <Button variant="contained" onClick={() => { navigate("/dashboard/provider"); onClose(); }}>Go to Provider Dashboard</Button>
+              <Button variant="contained" onClick={() => { navigate("/dashboard/provider/accommodations/create"); onClose(); }}>Create accommodation</Button>
               <Button variant="outlined" onClick={() => refetchAccommodation()}>Retry</Button>
               <Button onClick={onClose}>Close</Button>
             </Box>

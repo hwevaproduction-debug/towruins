@@ -15,6 +15,7 @@ router.get('/:id/tax', auth.requireRole('provider'), roomController.getAccommoda
 router.put('/:id/tax', auth.requireRole('provider'), roomController.upsertAccommodationTax);
 
 // New accommodation routes
+router.post('/', auth.requireRole('provider'), accommodationController.createAccommodation);
 router.get('/mine', auth.requireRole('provider'), accommodationController.getMyAccommodation);
 router.patch('/:id', auth.requireRole('provider'), accommodationController.updateAccommodation);
 router.post('/:id/images', auth.requireRole('provider'), accommodationController.addAccommodationImage);

@@ -20,6 +20,7 @@ import SavedSearches from "./views/SavedSearches";
 import Notifications from "./views/Notifications";
 import LandlordDashboard from "./views/Dashboard/Landlord";
 import ProviderDashboardShell from "./views/Dashboard/provider/ProviderDashboardShell";
+import CreateAccommodation from "./views/Dashboard/provider/CreateAccommodation";
 import TenantDashboard from "./views/Dashboard/Tenant";
 import ListingPayment from "./views/Dashboard/Payment";
 import AdminDashboard from "./views/Dashboard/Admin";
@@ -268,6 +269,14 @@ function App() {
                   <ProviderDashboardShell />
                 </ProtectedRoutes>
               }
+            />
+            <Route
+            path="/dashboard/provider/accommodations/create"
+            element={
+              <ProtectedRoutes allowedRoles={["provider"]}>
+                <CreateAccommodation />
+              </ProtectedRoutes>
+            }
             />
             <Route
               path="/dashboard/tenant"
