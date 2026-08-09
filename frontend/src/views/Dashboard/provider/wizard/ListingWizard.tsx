@@ -8,7 +8,9 @@ import {
   StepLabel,
   Stepper,
   Typography,
+  Button,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import {
   toEntityArray,
   toEntityObject,
@@ -35,6 +37,7 @@ const steps = ["Info", "Rooms", "Images", "Pricing", "Policies", "Review"];
 const emptyInitialValues = {};
 
 const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [draftData, setDraftData] = useState<Record<string, any>>({});
@@ -43,7 +46,17 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
   const stepSnapshots = useRef<Record<string, string>>({});
   const hasSeenStepSnapshot = useRef<Record<string, boolean>>({});
   const { data: draft, isLoading: isDraftLoading, isFetching: isDraftFetching } = useGetListingDraftQuery(undefined, { skip: !open });
-  const { data: accommodationResponse } = useGetMyAccommodationQuery(undefined, { skip: !open });
+
+  // Get accommodation and detect empty (404) vs other errors
+  const {
+    data: accommodationResponse,
+    isLoading: isAccommodationLoading,
+    isFetching: isAccommodationFetching,
+    isError: isAccommodationError,
+    error: accommodationError,
+    refetch: refetchAccommodation,
+  } = useGetMyAccommodationQuery(undefined, { skip: !open });
+
   const { data: roomsResponse } = useGetMyRoomsQuery(undefined, { skip: !open });
   const [updateListingDraft] = useUpdateListingDraftMutation();
   const accommodation = toEntityObject(accommodationResponse, ["accommodation"]);
@@ -113,6 +126,10 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
     setActiveStep((current) => Math.max(0, current - 1));
   };
 
+  const accommodationLoading = isAccommodationLoading || isAccommodationFetching;
+  const accommodation404 = isAccommodationError && Number((accommodationError as any)?.status) === 404;
+  const accommodationUnexpectedError = isAccommodationError && !accommodation404;
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
@@ -125,8 +142,35 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
         <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
           {steps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
         </Stepper>
-        {!accommodationId || !isHydrated ? (
+
+        {/* Loading states */}
+        {(!isHydrated || isDraftLoading || isDraftFetching || accommodationLoading) ? (
           <Typography>Loading listing...</Typography>
+
+        /* No accommodation (expected) */
+        ) : accommodation404 ? (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h6" gutterBottom>You don't have an accommodation set up yet</Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>Providers must set up an accommodation before creating listings. Go to your Provider Dashboard to create and configure your accommodation, then return here to continue creating a listing.</Typography>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button variant="contained" onClick={() => { navigate("/dashboard/provider"); onClose(); }}>Go to Provider Dashboard</Button>
+              <Button variant="outlined" onClick={() => refetchAccommodation()}>Retry</Button>
+              <Button onClick={onClose}>Close</Button>
+            </Box>
+          </Box>
+
+        /* Unexpected API error */
+        ) : accommodationUnexpectedError ? (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h6" gutterBottom>Unable to load accommodation</Typography>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>An unexpected error occurred while fetching your accommodation. Please try again or contact support if the problem persists.</Typography>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button variant="contained" onClick={() => refetchAccommodation()}>Retry</Button>
+              <Button onClick={onClose}>Close</Button>
+            </Box>
+          </Box>
+
+        /* Normal flow */
         ) : activeStep === 0 ? (
           <AccommodationStep accommodationId={accommodationId} onNext={next} initialValues={draftData.accommodation || emptyInitialValues} onDataChange={handleAccommodationDataChange} />
         ) : activeStep === 1 ? (
