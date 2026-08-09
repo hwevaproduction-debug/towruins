@@ -1,5 +1,45 @@
 # 26
 
+## 0809
+
+### 1522
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1522                                   |
+| Date       | 0809                                   |
+| Year       | 26                                     |
+| Type       | Seed                                   |
+| Status     | ✅ Focused Verified                     |
+| Scope      | Backend seed: temporary stays          |
+
+#### Summary
+Seeded 100 temporary-stay rooms (distributed across existing demo provider accounts) for demo/staging use. The process is idempotent and uses existing demo providers; rooms are attached to accommodations and include realistic variations (types, prices, amenities, images, availability blocks).
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/seed/seed.js                    |
+
+#### Repository Validation
+
+| Check                  | Result |
+| ---------------------- | ------ |
+| Idempotent seed        | ✅      |
+| Rooms present (total)  | 100    |
+| Distribution per demo provider | 20 each |
+| Local/API verification | Performed (seed script output) |
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | b23b9e9            |
+| Generated From | git diff + git log |
+
 ## 0808
 
 ### 1214
