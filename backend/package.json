@@ -19,7 +19,8 @@
     "test:home-feeds": "node --test tests/listingHomeFeeds.test.js",
     "test:monetization": "node --test tests/monetizationRules.test.js",
     "test:unit": "node --test tests/*.test.js",
-    "test:e2e": "node tests/e2e/runner.js"
+    "test:e2e": "node tests/e2e/runner.js",
+    "test:temporary-stay": "node tests/e2e/runner.js"
   },
   "author": "Alvin Phiri",
   "license": "ISC",
