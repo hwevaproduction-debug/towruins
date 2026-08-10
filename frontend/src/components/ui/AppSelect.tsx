@@ -11,10 +11,10 @@ interface AppSelectOption {
   value: string | number;
 }
 
-interface AppSelectProps extends SelectProps {
+type AppSelectProps = SelectProps & {
   label?: string;
   options: AppSelectOption[];
-}
+};
 
 const selectFocusSx = {
   "&.MuiInputBase-root": {
@@ -36,8 +36,16 @@ const formControlFocusSx = {
   },
 };
 
-const AppSelect = ({ label, options, sx, ...props }: AppSelectProps) => {
-  const labelId = label ? `${props.name || "app-select"}-label` : undefined;
+const AppSelect = ({
+  label,
+  options,
+  sx,
+  ...props
+}: AppSelectProps) => {
+  const labelId = label
+    ? `${props.name || "app-select"}-label`
+    : undefined;
+
   return (
     <FormControl
       fullWidth
@@ -45,10 +53,14 @@ const AppSelect = ({ label, options, sx, ...props }: AppSelectProps) => {
       sx={formControlFocusSx}
     >
       {label && <InputLabel id={labelId}>{label}</InputLabel>}
+
       <Select
         labelId={labelId}
         label={label}
-        sx={[selectFocusSx, ...(Array.isArray(sx) ? sx : [sx])]}
+        sx={[
+          selectFocusSx,
+          ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+        ]}
         {...props}
       >
         {options.map((option) => (
@@ -62,3 +74,4 @@ const AppSelect = ({ label, options, sx, ...props }: AppSelectProps) => {
 };
 
 export default AppSelect;
+

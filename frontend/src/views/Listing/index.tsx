@@ -92,6 +92,7 @@ const CreateListing = () => {
   const { id } = useParams();
   const userId = useTypedSelector(selectedUserId);
   const token = useTypedSelector(selectedUserToken);
+  const userRole = useTypedSelector(selectedUserRole);
   const [getR2SignedUrl] = useGetR2SignedUrlMutation();
   const has401FiredRef = useRef(false);
   const restoredDraftRef = useRef(false);
@@ -244,8 +245,6 @@ const CreateListing = () => {
 
   const listingHandler = async (data: listingForm) => {
     const resolvedUserId = userId;
-
-      const userRole = useTypedSelector(selectedUserRole);
 
       if (!resolvedUserId) {
         setToast({
@@ -422,7 +421,7 @@ const CreateListing = () => {
           internet: false,
         },
       });
-      setImageUrls(listingData?.data?.imageUrls);
+      setImageUrls(listingData?.data?.imageUrls ?? []);
     }
   }, [id, listingData, listingSuccess]);
 

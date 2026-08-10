@@ -47,6 +47,15 @@ export const apiSlice = createApi({
     "ProviderReview",
     "LegalDoc",
     "WalletTransaction",
+
+    // Admin/onboarding tags
+    "Invitation",
+    "User",
+    "AuditLog",
+    "AdminAccommodation",
+    "AdminReview",
+    "Dispute",
+    "Report",
   ],
   endpoints: (builder) => ({}),
 });

@@ -734,7 +734,7 @@ exports.getInvitations = catchAsync(async (req, res, next) => {
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
   const skip = (pageNum - 1) * limitNum;
 
-  const invitations = await prisma.userInvitation.findMany({
+  const invitations = await prisma.UserInvitation.findMany({
     where: status ? { status } : {},
     include: {
       user: {
@@ -758,7 +758,7 @@ exports.getInvitations = catchAsync(async (req, res, next) => {
     take: limitNum,
   });
 
-  const total = await prisma.userInvitation.count({
+  const total = await prisma.UserInvitation.count({
     where: status ? { status } : {},
   });
 

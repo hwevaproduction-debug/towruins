@@ -1,3 +1,4 @@
+export {};
 /**
  * Integration tests for admin onboarding flows
  * Tests the complete user journey through bulk import → claim → onboarding
