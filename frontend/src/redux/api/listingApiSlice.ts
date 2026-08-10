@@ -147,6 +147,36 @@ export const listingApiSlice = apiSlice.injectEndpoints({
       },
       invalidatesTags: [{ type: "ListingDraft", id: "MINE" }],
     }),
+    autosaveListingDraft: builder.mutation({
+      async queryFn({ id, payload }, _api, _extraOptions, fetchWithBQ) {
+        const body = { data: payload };
+
+        if (id) {
+          const updateResult = await fetchWithBQ({
+            url: `listing-drafts/${id}`,
+            method: "PUT",
+            body,
+          });
+
+          if (!updateResult.error) {
+            return { data: updateResult.data };
+          }
+        }
+
+        const createResult = await fetchWithBQ({
+          url: "listing-drafts",
+          method: "POST",
+          body,
+        });
+
+        if (createResult.error) {
+          return { error: createResult.error };
+        }
+
+        return { data: createResult.data };
+      },
+      // Intentionally do not invalidate ListingDraft tag to avoid triggering a refetch on autosave
+    }),
 deleteListingDraft: builder.mutation({
       query: (id) => ({
         url: `listing-drafts/${id}`,
@@ -177,6 +207,7 @@ export const {
   useGetHomeGroupedByLocationQuery,
   useGetListingDraftQuery,
   useUpdateListingDraftMutation,
+  useAutosaveListingDraftMutation,
   useDeleteListingDraftMutation,
   useGetRestorationConfigQuery,
 } = listingApiSlice;
