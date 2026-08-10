@@ -20,6 +20,7 @@ import {
 import {
   useGetListingDraftQuery,
   useUpdateListingDraftMutation,
+  useAutosaveListingDraftMutation,
 } from "../../../../redux/api/listingApiSlice";
 import AccommodationStep from "./steps/AccommodationStep";
 import RoomsStep from "./steps/RoomsStep";
@@ -59,6 +60,10 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
 
   const { data: roomsResponse } = useGetMyRoomsQuery(undefined, { skip: !open });
   const [updateListingDraft] = useUpdateListingDraftMutation();
+  const [autosaveListingDraft] = useAutosaveListingDraftMutation();
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+  const draftDataRef = useRef(draftData);
   const accommodation = toEntityObject(accommodationResponse, ["accommodation"]);
   const rooms = useMemo(() => toEntityArray(roomsResponse, ["rooms", "data"]), [roomsResponse]);
   const accommodationId = accommodation?._id || accommodation?.id || "";
@@ -107,15 +112,66 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
   const handlePricingDataChange = useCallback((data: any) => handleDataChange("pricing", data), [handleDataChange]);
   const handlePoliciesDataChange = useCallback((data: any) => handleDataChange("policies", data), [handleDataChange]);
 
+  // keep a ref of latest draftData to avoid stale closure
+  useEffect(() => {
+    draftDataRef.current = draftData;
+  }, [draftData]);
+
   useEffect(() => {
     if (!open || !isHydrated || !hasUserChanges.current) return undefined;
+
     setSaveStatus("saving");
     const timeout = window.setTimeout(async () => {
-      await updateListingDraft({ id: draftId, payload: { step: activeStep, ...draftData } });
-      setSaveStatus("saved");
+      // serialize saves: if a save is in-flight, mark pending and return
+      if (isSavingRef.current) {
+        pendingSaveRef.current = true;
+        return;
+      }
+
+      isSavingRef.current = true;
+      try {
+        const res = await autosaveListingDraft({ id: draftId, payload: { step: activeStep, ...draftDataRef.current } });
+        if ((res as any).error) {
+          // non-disruptive failure: keep local form intact and indicate failure
+          setSaveStatus("idle");
+        } else {
+          setSaveStatus("saved");
+          // mark that current changes are persisted
+          hasUserChanges.current = false;
+        }
+      } catch (err) {
+        setSaveStatus("idle");
+      } finally {
+        isSavingRef.current = false;
+        if (pendingSaveRef.current) {
+          pendingSaveRef.current = false;
+          // trigger another autosave for the latest data
+          hasUserChanges.current = true;
+          // schedule a short timeout to let state settle before saving again
+          const t = window.setTimeout(async () => {
+            if (!isSavingRef.current) {
+              isSavingRef.current = true;
+              try {
+                const r2 = await autosaveListingDraft({ id: draftId, payload: { step: activeStep, ...draftDataRef.current } });
+                if (!(r2 as any).error) {
+                  setSaveStatus("saved");
+                  hasUserChanges.current = false;
+                }
+              } catch (e) {
+                // swallow
+              } finally {
+                isSavingRef.current = false;
+              }
+            }
+          }, 200);
+          // clear this fallback timer if component unmounts before it fires
+          return () => window.clearTimeout(t);
+        }
+      }
     }, 1500);
+
     return () => window.clearTimeout(timeout);
-  }, [activeStep, draftData, draftId, isHydrated, open, updateListingDraft]);
+  }, [activeStep, draftId, isHydrated, open, autosaveListingDraft]);
 
   const next = () => {
     hasUserChanges.current = true;
