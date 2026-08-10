@@ -3,7 +3,7 @@ import { Box, Typography, TextField } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AppCard from "../../components/ui/AppCard";
 import AppButton from "../../components/ui/AppButton";
-import { useValidateClaimQuery, useClaimAccountMutation, useCompleteOnboardingMutation } from "../../redux/api/adminApiSlice";
+import { useValidateClaimQuery, useClaimAccountMutation } from "../../redux/api/adminApiSlice";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/auth/authSlice";
 
@@ -14,7 +14,6 @@ const ClaimAccount = () => {
   const dispatch = useDispatch();
   const { data, isFetching } = useValidateClaimQuery(token, { skip: !token });
   const [claimAccount, { isLoading: isClaiming }] = useClaimAccountMutation();
-  const [completeOnboarding] = useCompleteOnboardingMutation();
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 

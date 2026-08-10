@@ -97,7 +97,7 @@ interface ToastState {
   type: "success" | "error" | "warning";
 }
 
-type AdminTab = "expired" | "providers" | "bookings" | "legal";
+type AdminTab = "expired" | "providers" | "bookings" | "legal" | "users";
 type PaginationItem = number | "ellipsis-start" | "ellipsis-end";
 
 const MAX_BULK_REVIVE_IDS = 100;
