@@ -81,4 +81,17 @@ router.post(
   adminOnboardController.revokeInvitation
 );
 
+// Temporary stays (admin) - full lifecycle management
+router.get("/temporary-stays", adminController.getTemporaryStays);
+router.get("/temporary-stays/:id", adminController.getTemporaryStayById);
+router.post("/temporary-stays", adminController.createTemporaryStay);
+router.put("/temporary-stays/:id", adminController.updateTemporaryStay);
+router.patch("/temporary-stays/:id", adminController.updateTemporaryStay);
+router.delete("/temporary-stays/:id", adminController.deleteTemporaryStay);
+router.post("/temporary-stays/:id/restore", adminController.restoreTemporaryStay);
+router.post("/temporary-stays/:id/publish", adminController.publishTemporaryStay);
+router.post("/temporary-stays/:id/unpublish", adminController.unpublishTemporaryStay);
+router.post("/temporary-stays/:id/suspend", adminController.suspendTemporaryStay);
+router.post("/temporary-stays/:id/reinstate", adminController.reinstateTemporaryStay);
+
 module.exports = router;

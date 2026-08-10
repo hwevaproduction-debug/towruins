@@ -35,6 +35,7 @@ import AppSelect from "../../components/ui/AppSelect";
 import MUITable from "../../components/MUITable";
 import BulkImportDialog from "./components/BulkImportDialog";
 import { Heading, SubHeading } from "../../components/Heading";
+import TemporaryStays from "./TemporaryStays";
 import ToastAlert from "../../components/ToastAlert/ToastAlert";
 import {
   AdminBooking,
@@ -97,7 +98,7 @@ interface ToastState {
   type: "success" | "error" | "warning";
 }
 
-type AdminTab = "expired" | "providers" | "bookings" | "legal" | "users";
+type AdminTab = "expired" | "providers" | "bookings" | "legal" | "users" | "temporaryStays";
 type PaginationItem = number | "ellipsis-start" | "ellipsis-end";
 
 const MAX_BULK_REVIVE_IDS = 100;
@@ -1742,6 +1743,11 @@ const AdminDashboard: React.FC = () => {
             sx={{ textTransform: "none", fontWeight: 600 }}
           />
           <Tab
+            value="temporaryStays"
+            label="Temporary Stays"
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          />
+          <Tab
             value="bookings"
             label="Bookings & Settlements"
             sx={{ textTransform: "none", fontWeight: 600 }}
@@ -1760,6 +1766,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === "expired" && renderExpiredListings()}
         {activeTab === "providers" && renderProviders()}
+        {activeTab === "temporaryStays" && <TemporaryStays />}
         {activeTab === "bookings" && renderBookings()}
         {activeTab === "legal" && renderLegalDocs()}
         {activeTab === "users" && renderUsers()}
