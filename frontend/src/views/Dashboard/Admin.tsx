@@ -55,6 +55,13 @@ import {
   useUpdateLegalDocMutation,
   useUpdateCommissionRateMutation,
   useVerifyProviderMutation,
+  // onboarding / users
+  useValidateImportMutation,
+  useCreateImportMutation,
+  useListInvitationsQuery,
+  useResendInvitationMutation,
+  useRevokeInvitationMutation,
+  useGetAdminUsersQuery,
 } from "../../redux/api/adminApiSlice";
 import { convertToFormattedDate } from "../../utils";
 
@@ -1540,6 +1547,109 @@ const AdminDashboard: React.FC = () => {
 
   const renderLegalDocs = () => (
     <>
+  );
+
+  const renderUsers = () => {
+    const { data: usersData, isFetching: isFetchingUsers } = useGetAdminUsersQuery({ page: 1, limit: 50 });
+    const { data: invitationsData, isFetching: isFetchingInv } = useListInvitationsQuery();
+    const [resendInvitation] = useResendInvitationMutation();
+    const [revokeInvitation] = useRevokeInvitationMutation();
+
+    const users = usersData?.data ?? [];
+    const invitations = invitationsData?.data ?? [];
+
+    const handleResend = async (id: string) => {
+      try {
+        await resendInvitation({ id }).unwrap();
+        setToast({ open: true, message: "Invitation resent.", type: "success" });
+      } catch (err) {
+        setToast({ open: true, message: getErrorMessage(err, "Unable to resend."), type: "error" });
+      }
+    };
+
+    const handleRevoke = async (id: string) => {
+      try {
+        await revokeInvitation({ id }).unwrap();
+        setToast({ open: true, message: "Invitation revoked.", type: "success" });
+      } catch (err) {
+        setToast({ open: true, message: getErrorMessage(err, "Unable to revoke."), type: "error" });
+      }
+    };
+
+    return (
+      <>
+        <Heading sx={{ mb: "20px" }}>Admin - Users</Heading>
+
+        <AppCard sx={{ mb: 2 }}>
+          <Typography sx={{ mb: 1, fontWeight: 700 }}>Invitations</Typography>
+          {isFetchingInv ? (
+            <Box sx={{ py: 4, textAlign: "center" }}>Loading...</Box>
+          ) : invitations.length === 0 ? (
+            renderEmptyState("No invitations found.")
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Sent At</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {invitations.map((inv: any) => (
+                  <TableRow key={inv.id}>
+                    <TableCell>{inv.email || inv.user?.email}</TableCell>
+                    <TableCell>{inv.role || inv.user?.role}</TableCell>
+                    <TableCell>{inv.status}</TableCell>
+                    <TableCell>{inv.sentAt || inv.createdAt || "-"}</TableCell>
+                    <TableCell>
+                      <AppButton size="small" onClick={() => handleResend(inv.id)}>Resend</AppButton>
+                      <AppButton size="small" variant="outlined" color="error" onClick={() => handleRevoke(inv.id)} sx={{ ml: 1 }}>Revoke</AppButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </AppCard>
+
+        <AppCard>
+          <Typography sx={{ mb: 1, fontWeight: 700 }}>Users</Typography>
+          {isFetchingUsers ? (
+            <Box sx={{ py: 4, textAlign: "center" }}>Loading...</Box>
+          ) : users.length === 0 ? (
+            renderEmptyState("No users found.")
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Joined</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {users.map((u: any) => (
+                  <TableRow key={u.id || u._id}>
+                    <TableCell>{u.firstName || u.name || "-"}</TableCell>
+                    <TableCell>{u.email || "-"}</TableCell>
+                    <TableCell>{u.role || "-"}</TableCell>
+                    <TableCell>{u.createdAt || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </AppCard>
+      </>
+    );
+  };
+
+  const renderLegalDocs = () => (
+    <>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, gap: 2, flexWrap: "wrap" }}>
         <Heading sx={{ mb: 0 }}>Legal Documents</Heading>
         <Button variant="contained" onClick={openCreateLegalDialog}>
@@ -1641,12 +1751,18 @@ const AdminDashboard: React.FC = () => {
             label="Legal Documents"
             sx={{ textTransform: "none", fontWeight: 600 }}
           />
+          <Tab
+            value="users"
+            label="Users"
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          />
         </Tabs>
 
         {activeTab === "expired" && renderExpiredListings()}
         {activeTab === "providers" && renderProviders()}
         {activeTab === "bookings" && renderBookings()}
         {activeTab === "legal" && renderLegalDocs()}
+        {activeTab === "users" && renderUsers()}
       </AppContainer>
 
       <BulkImportDialog open={bulkImportOpen} onClose={() => setBulkImportOpen(false)} />
