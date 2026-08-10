@@ -2,6 +2,39 @@
 
 ## 0810
 
+### 0628
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0628                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Provider listing publication and onboarding clarity fixes |
+
+#### Summary
+Investigated provider listing and stay publication flows. Root causes identified: public stay feed exposes rooms (Room.status === AVAILABLE) and requires Accommodation.isPublished + verificationStatus === APPROVED; legacy Listing feed uses Listing.status === "active". Providers were publishing but missing required rooms or lacking the landlord role for image uploads. Implemented frontend safeguards: prevent publishing an accommodation with zero rooms; surface clear error when attempting to upload listing images without the landlord role; improved publish button validation and messaging in the provider wizard and listing creation flow.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ReviewStep.tsx |
+| Modified | frontend/src/views/Listing/index.tsx    |
+
+#### Database
+No schema migrations required.
+
+#### Tests
+Added manual reproduction steps; unit/e2e tests to follow in a subsequent pass.
+
+#### Notes
+This is a targeted, low-risk UI validation fix; backend publication rules and moderation were preserved.
+
+## 0810
+
 ### 0242
 
 | Field      | Value                                  |

@@ -31,12 +31,30 @@ const ReviewStep = ({ accommodationId, accommodation, rooms, onPublish, onBack }
           </Paper>
         </Grid>
       </Grid>
-      <Stack direction="row" spacing={1}>
-        <Button onClick={onBack}>Back</Button>
-        <Button variant="contained" disabled={isLoading} onClick={async () => { await updateAccommodation({ id: accommodationId, payload: { isPublished: true } }).unwrap(); onPublish(); }}>
-          {isLoading ? "Publishing..." : "Publish Listing"}
-        </Button>
-      </Stack>
+      {(() => {
+        const canPublish = rooms && rooms.length > 0;
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button onClick={onBack}>Back</Button>
+            <Button
+              variant="contained"
+              disabled={isLoading || !canPublish}
+              onClick={async () => {
+                if (!canPublish) return;
+                await updateAccommodation({ id: accommodationId, payload: { isPublished: true } }).unwrap();
+                onPublish();
+              }}
+            >
+              {isLoading ? "Publishing..." : "Publish Listing"}
+            </Button>
+            {!canPublish && (
+              <Typography color="error" sx={{ alignSelf: 'center', ml: 1 }}>
+                Add at least one room before publishing this accommodation.
+              </Typography>
+            )}
+          </Stack>
+        );
+      })()}
     </Stack>
   );
 };
