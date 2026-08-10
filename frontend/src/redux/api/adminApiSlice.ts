@@ -877,6 +877,17 @@ export const adminApiSlice = apiSlice.injectEndpoints({
             ]
           : [{ type: "Invitation" as const, id: "LIST" }],
     }),
+
+    getAdminUsers: builder.query<{ data: any[]; total?: number }, { page?: number; limit?: number } | void>({
+      query: (params) => ({ url: `admin/users${buildSearchParams((params || {}) as Record<string, string | number | undefined>)}`, method: "GET" }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map((user: any) => ({ type: "User" as const, id: user.id || user._id })),
+              { type: "User" as const, id: "LIST" },
+            ]
+          : [{ type: "User" as const, id: "LIST" }],
+    }),
     resendInvitation: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({ url: `admin/invitations/${id}/resend`, method: "POST" }),
       invalidatesTags: (_result, _error, { id }) => [
@@ -926,6 +937,7 @@ export const {
   useListInvitationsQuery,
   useResendInvitationMutation,
   useRevokeInvitationMutation,
+  useGetAdminUsersQuery,
   useValidateClaimQuery,
   useClaimAccountMutation,
   useCompleteOnboardingMutation,
