@@ -2,6 +2,47 @@
 
 ## 0810
 
+### 1722
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | build-fix-temporarystay-tag-1722       |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: RTK Query tag registration and cache invalidation fixes
+
+#### Summary
+
+- Root cause: Admin TemporaryStay RTK Query endpoints used tag "TemporaryStay" but the canonical createApi tagTypes did not register it, causing TS type error TS2322 during build.
+- Fix: Added "TemporaryStay" to apiSlice's tagTypes. Verified all admin Temporary Stay endpoints (getTemporaryStays, getTemporaryStayById, createTemporaryStay, updateTemporaryStay, publishTemporaryStay, unpublishTemporaryStay, deleteTemporaryStay, restoreTemporaryStay) use the same tag and follow LIST + entity invalidation patterns.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/redux/api/apiSlice.ts (added "TemporaryStay" tagType)
+| Modified | frontend/src/redux/api/adminStayApiSlice.ts (uses existing "TemporaryStay" tags; validated tag usage)
+
+#### Build Validation
+
+Attempted: cd frontend && npm run build
+Result: Failed in this environment with "react-scripts: not found". The TypeScript tag mismatch is fixed in-source; please run CI or run `npm ci && npm run build` locally/CI to fully validate the build and produce final artifacts.
+
+#### Notes
+
+- No new API slices were created. The canonical apiSlice was updated in place.
+- Cache invalidation: mutations invalidate both the entity id and the LIST tag to ensure list/detail refreshes as expected.
+
+#### Git
+
+Commit will include Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
+## 0810
+
 ### 1325
 
 | Field      | Value                                  |

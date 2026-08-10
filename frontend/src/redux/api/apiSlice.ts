@@ -24,6 +24,7 @@ export const apiSlice = createApi({
     "Provider",
     "AdminBooking",
     "Room",
+    "TemporaryStay",
     "ProviderBooking",
     "ProviderProfile",
     "ProviderAvailability",
