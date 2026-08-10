@@ -1555,6 +1555,63 @@ const AdminDashboard: React.FC = () => {
 
   const renderLegalDocs = () => (
     <>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, gap: 2, flexWrap: "wrap" }}>
+        <Heading sx={{ mb: 0 }}>Legal Documents</Heading>
+        <Button variant="contained" onClick={openCreateLegalDialog}>
+          New Document
+        </Button>
+      </Box>
+      <AppCard sx={{ boxShadow: "0 4px 24px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        {isFetchingLegalDocs ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : legalDocs.length === 0 ? (
+          renderEmptyState("No legal documents yet.")
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {["Title", "Slug", "Version", "Status", "Last Updated", "Actions"].map((header) => (
+                    <TableCell key={header} sx={{ fontWeight: 800 }}>{header}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {legalDocs.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>{doc.title}</TableCell>
+                    <TableCell>{doc.slug}</TableCell>
+                    <TableCell>{doc.version}</TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={doc.isActive ? "Active" : "Archived"}
+                        sx={getStatusChipColor(doc.isActive ? "active" : "archived")}
+                      />
+                    </TableCell>
+                    <TableCell>{convertToFormattedDate(doc.updatedAt)}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => openEditLegalDialog(doc)} size="small">
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleArchiveLegalDoc(doc)}
+                        size="small"
+                        disabled={isArchivingLegalDoc}
+                      >
+                        <ArchiveIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </AppCard>
+    </>
   );
 
   const renderUsers = () => {
