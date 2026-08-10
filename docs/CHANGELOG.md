@@ -2,6 +2,44 @@
 
 ## 0810
 
+### 0756
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0756                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Chore                                  |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: add package-lock.json to enable Docker npm ci |
+
+#### Summary
+Added frontend/package-lock.json so Docker builds can run npm ci deterministically. Generated with npm install --package-lock-only --legacy-peer-deps.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | frontend/package-lock.json             |
+
+#### Database
+No schema migrations required.
+
+#### Tests
+N/A
+
+#### Notes
+Committed on branch stagging (be83555). Generated from git diff + git log.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | be83555            |
+| Generated From | git diff + git log |
+
 ### 0628
 
 | Field      | Value                                  |
