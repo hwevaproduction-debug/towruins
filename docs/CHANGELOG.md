@@ -2,6 +2,59 @@
 
 ## 0810
 
+### 1325
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1325                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: listing modal autosave, draft persistence, and authorization fixes |
+
+#### Summary
+
+Fixed a root cause that caused the listing creation/edit modal to visually blink/reset during autosave. Root causes and fixes:
+
+- Root cause: background autosave caused RTK Query invalidation of the ListingDraft tag which triggered getListingDraft refetches; combined with autosave timing and authorization failures this caused the modal to show "Loading" (a remount-like visual) and lose visual state.
+- Authorization: ensured the API layer sends Authorization properly and added a non-invalidating autosave endpoint to avoid refetch/remounts from background saves.
+- Autosave behavior: replaced tight/unstable autosave with a debounced autosave (1.5s), serialized in-flight autosaves, avoided stale-closure overwrites, cancelled timers on unmount, and kept failures non-destructive and non-verbose.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/redux/api/listingApiSlice.ts (added autosaveListingDraft mutation)
+| Modified | frontend/src/views/Dashboard/provider/wizard/ListingWizard.tsx (use autosave endpoint, serialize saves, non-disruptive error handling)
+
+#### Database
+No schema migrations required.
+
+#### Tests
+Manual scenarios exercised locally (manual QA):
+- Scenario A — normal typing: verified single autosave after 1.5s of inactivity.
+- Scenario B — rapid changes: verified only the final autosave persisted.
+- Scenario C — API failure (403 simulated): modal did not blink or remount; form values and wizard step preserved; no repeated toasts.
+- Scenario F — modal close: pending timers cleared and no autosave fired after unmount.
+
+#### Notes
+- Implemented a dedicated non-invalidating autosave mutation so background saves do not trigger a refetch of the draft (avoids remounting the form).  
+- Autosave failures are now surfaced with a small, local status indicator (Saving / Saved / Unable to save) and do not trigger global toasts.
+- Authorization issues were investigated; autosave now uses the same authenticated baseQuery path and will not weaken backend authorization.
+- Branch: stagging
+- Commits: 60866b7, 8812e5e
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | 60866b7, 8812e5e   |
+| Generated From | git diff + git log |
+
+
 ### 0756
 
 | Field      | Value                                  |
