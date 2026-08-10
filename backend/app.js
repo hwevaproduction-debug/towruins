@@ -28,6 +28,7 @@ const { globalLimiter } = require("./middleware/rateLimiter");
 const listingRoutes = require("./routes/listingRoutes");
 const listingDraftRoutes = require("./routes/listingDraftRoutes");
 const adminRouter = require("./routes/adminRoutes");
+const accountClaimRouter = require("./routes/accountClaimRoutes");
 const bookingRouter = require("./routes/bookingRoutes");
 
 const normalizeOrigin = (value = "") => value.trim().replace(/\/+$/, "");
@@ -137,6 +138,7 @@ app.use("/api/v1/listings", listingRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/v1/listing-drafts", listingDraftRoutes);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/account", accountClaimRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/engagements", engagementRouter);
 app.use("/api/v1/leads", leadRouter);

@@ -850,6 +850,62 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["AuditLog"],
     }),
+    // Admin Onboarding & Invitations
+    validateImport: builder.mutation<any, FormData>({
+      query: (formData) => ({
+        url: "admin/onboarding/import/validate",
+        method: "POST",
+        body: formData,
+      }),
+      // returns preview: { valid: [...], invalid: [...], summary: {...} }
+    }),
+    createImport: builder.mutation<any, FormData>({
+      query: (formData) => ({
+        url: "admin/onboarding/import",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Provider", "AdminListing", "AuditLog"],
+    }),
+    listInvitations: builder.query<{ data: any[] }, void>({
+      query: () => ({ url: "admin/invitations", method: "GET" }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map((inv: any) => ({ type: "Invitation" as const, id: inv.id })),
+              { type: "Invitation" as const, id: "LIST" },
+            ]
+          : [{ type: "Invitation" as const, id: "LIST" }],
+    }),
+    resendInvitation: builder.mutation<any, { id: string }>({
+      query: ({ id }) => ({ url: `admin/invitations/${id}/resend`, method: "POST" }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Invitation", id },
+        { type: "Invitation", id: "LIST" },
+        "AuditLog",
+      ],
+    }),
+    revokeInvitation: builder.mutation<any, { id: string }>({
+      query: ({ id }) => ({ url: `admin/invitations/${id}/revoke`, method: "POST" }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Invitation", id },
+        { type: "Invitation", id: "LIST" },
+        "AuditLog",
+      ],
+    }),
+    // Public claim endpoints
+    validateClaim: builder.query<any, string>({
+      query: (token) => ({ url: `account/claim/validate?token=${encodeURIComponent(token)}`, method: "GET" }),
+    }),
+    claimAccount: builder.mutation<any, { token: string; password: string }>({
+      query: ({ token, password }) => ({ url: "account/claim", method: "POST", body: { token, password } }),
+    }),
+
+    completeOnboarding: builder.mutation<any, void>({
+      query: () => ({ url: "account/onboarding/complete", method: "POST" }),
+      invalidatesTags: ["User"],
+    }),
+
     archiveLegalDoc: builder.mutation<{ status: string; data: LegalDocument }, string>({
       query: (id) => ({ url: `admin/legal-docs/${id}`, method: "DELETE" }),
       invalidatesTags: ["AuditLog"],
@@ -864,6 +920,16 @@ export const {
   useDeleteListingsByOwnerMutation,
   useBulkReviveListingsMutation,
   usePurgeSeededListingsMutation,
+  // Onboarding & Invitations
+  useValidateImportMutation,
+  useCreateImportMutation,
+  useListInvitationsQuery,
+  useResendInvitationMutation,
+  useRevokeInvitationMutation,
+  useValidateClaimQuery,
+  useClaimAccountMutation,
+  useCompleteOnboardingMutation,
+
   useGetProvidersQuery,
   useVerifyProviderMutation,
   useUpdateCommissionRateMutation,

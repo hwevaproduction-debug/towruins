@@ -1,5 +1,105 @@
 # 26
 
+## 0810
+
+### 0242
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0242                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Feature                                |
+| Status     | ✅ Implemented                         |
+| Scope      | Admin bulk user onboarding + account claim + invitation mgmt |
+
+#### Summary
+Implemented complete admin-driven bulk user onboarding system with secure account claiming, invitation management, and onboarding state tracking. Admins can bulk-import users via CSV, generate secure claim tokens, resend/revoke invitations, and monitor user onboarding progress. New users access the system via claim links that set their password without plaintext storage.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | backend/controllers/adminOnboardController.js |
+| Created  | backend/routes/adminRoutes.js |
+| Created  | backend/routes/accountClaimRoutes.js |
+| Created  | backend/tests/adminOnboardController.test.js |
+| Modified | backend/app.js |
+| Modified | backend/package.json |
+| Modified | backend/prisma/schema.prisma |
+
+#### Database Models
+Database schema already included models for this feature:
+- UserInvitation: stores invitation state, token hash, expiration, claim status
+- AdminImportBatch: tracks CSV import batches and associated invitations
+- AdminImportRow: records validation state for each CSV row
+- User model extended: onboardingStatus, onboardingCompletedAt fields
+
+#### API Endpoints
+
+| Method | Route | Protected | Purpose |
+| ------ | ----- | --------- | ------- |
+| POST | /api/v1/admin/onboarding/import/validate | Yes (admin) | Validate CSV before import |
+| POST | /api/v1/admin/onboarding/import | Yes (admin) | Create users and send invitations |
+| GET | /api/v1/admin/invitations | Yes (admin) | List pending/claimed invitations |
+| POST | /api/v1/admin/invitations/:id/resend | Yes (admin) | Resend invitation email |
+| POST | /api/v1/admin/invitations/:id/revoke | Yes (admin) | Revoke invitation |
+| GET | /api/v1/account/claim/validate | No | Validate claim token |
+| POST | /api/v1/account/claim | No | Claim account and set password |
+| POST | /api/v1/account/onboarding/complete | Yes (logged-in) | Mark onboarding complete |
+
+#### Key Features
+- CSV import with full validation (email format, duplicates, existing users, invalid roles)
+- Secure random token generation (32-byte) with SHA256 hashing (no plaintext storage)
+- 7-day configurable token expiration
+- Email delivery via existing application mail service
+- One-time-use token invalidation after successful claim
+- Transaction-based batch processing for consistency
+- Comprehensive audit logging of admin actions
+- Invitation status tracking (PENDING, CLAIMED, REVOKED, EXPIRED)
+- Role-based access control (admin-only for bulk operations)
+- Support for tenant, landlord, provider roles (extensible)
+
+#### Dependencies Added
+- csv-parse@^5.5.6 (CSV parsing)
+- uuid@^9.0.1 (temp password generation)
+- multer@^1.4.5-lts.1 (file upload handling)
+
+#### Security
+- Tokens hashed before storage (not plaintext)
+- Password minimum 8 characters, hashed with bcryptjs
+- Admin authorization enforced on all administrative endpoints
+- Audit trail for all admin actions (create, resend, revoke)
+- Token expiration prevents indefinite claim windows
+- One-claim-only design prevents token reuse
+
+#### Testing
+- Unit tests for CSV validation (valid/invalid rows, duplicates, email format)
+- Tests for claim token validation (invalid, expired, already claimed)
+- Tests for password requirements (mismatch, too short)
+- Authorization tests (admin-only access)
+
+#### Remaining Work
+- Frontend: Admin dashboard pages for bulk import UI
+- Frontend: Account claim flow page (/claim-account)
+- Frontend: Onboarding walkthrough (role-specific)
+- Frontend: User detail/regulatory view (listings, requests, activity)
+- Frontend: Integration tests
+
+#### Notes
+- Existing infrastructure reused: auth (JWT), email (Gmail), audit logs, role system
+- No new email provider introduced; uses existing configuration
+- Deployment requires DATABASE_URL for Prisma connection
+- CSV format: firstName, lastName, email, role, phoneNumber (all except phoneNumber required)
+
+#### Git
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | d6a4d9f            |
+| Generated From | git diff + git log |
+
 ## 0809
 
 ### 1522

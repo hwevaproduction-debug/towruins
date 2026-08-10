@@ -27,6 +27,7 @@ import AdminDashboard from "./views/Dashboard/Admin";
 import VerifyEmail from "./views/VerifyEmail";
 import VerifyPhone from "./views/VerifyPhone";
 import Onboarding from "./views/Onboarding";
+import ClaimAccount from "./views/ClaimAccount";
 import Stays from "./views/Stays";
 import StayRoomDetail from "./views/Stays/RoomDetail";
 import BookingConfirmation from "./views/Stays/BookingConfirmation";
@@ -191,6 +192,7 @@ function App() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/verify-phone" element={<VerifyPhone />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/claim-account" element={<ClaimAccount />} />
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<TermsOfUse />} />

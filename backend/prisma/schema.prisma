@@ -167,16 +167,16 @@ enum EngagementStatus {
 }
 
 model User {
-  id                       String              @id @default(cuid())
-  username                 String              @unique
-  email                    String              @unique
+  id                       String                       @id @default(cuid())
+  username                 String                       @unique
+  email                    String                       @unique
   password                 String
-  avatar                   String              @default("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5jifLXKb2qo_5aXh54USNlvxI34oPpG3zTw&usqp=CAU")
-  role                     String              @default("tenant")
+  avatar                   String                       @default("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5jifLXKb2qo_5aXh54USNlvxI34oPpG3zTw&usqp=CAU")
+  role                     String                       @default("tenant")
   phoneNumber              String?
   nationalId               String?
-  isEmailVerified          Boolean             @default(false)
-  isPhoneVerified          Boolean             @default(false)
+  isEmailVerified          Boolean                      @default(false)
+  isPhoneVerified          Boolean                      @default(false)
   phoneOtp                 String?
   phoneOtpExpires          DateTime?
   emailVerificationToken   String?
@@ -188,51 +188,99 @@ model User {
   listings                 Listing[]
   listingDrafts            ListingDraft[]
   payments                 Payment[]
-  rooms                    Room[]              @relation("ProviderRooms")
-  guestBookings            Booking[]           @relation("GuestBookings")
-  providerBookings         Booking[]           @relation("ProviderBookings")
+  rooms                    Room[]                       @relation("ProviderRooms")
+  guestBookings            Booking[]                    @relation("GuestBookings")
+  providerBookings         Booking[]                    @relation("ProviderBookings")
   savedSearches            SavedSearch[]
-  accommodations           Accommodation[]     @relation("AccommodationOwner")
-  availabilityBlocks       AvailabilityBlock[] @relation("AvailabilityBlockCreator")
-  reviews                  Review[]            @relation("ReviewGuest")
-  notificationJobs         NotificationJob[]   @relation("NotificationJobRecipient")
+  accommodations           Accommodation[]              @relation("AccommodationOwner")
+  availabilityBlocks       AvailabilityBlock[]          @relation("AvailabilityBlockCreator")
+  reviews                  Review[]                     @relation("ReviewGuest")
+  notificationJobs         NotificationJob[]            @relation("NotificationJobRecipient")
   notifications            Notification[]
-  auditLogs                AuditLog[]          @relation("AdminAuditLogs")
-  reports                  Report[]            @relation("ReportReporter")
-  resolvedReports          Report[]            @relation("ReportResolver")
-  raisedDisputes           Dispute[]           @relation("DisputeRaisedBy")
-  resolvedDisputes         Dispute[]           @relation("DisputeResolver")
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @updatedAt
-  verificationStatus       String              @default("UNVERIFIED")
+  auditLogs                AuditLog[]                   @relation("AdminAuditLogs")
+  reports                  Report[]                     @relation("ReportReporter")
+  resolvedReports          Report[]                     @relation("ReportResolver")
+  raisedDisputes           Dispute[]                    @relation("DisputeRaisedBy")
+  resolvedDisputes         Dispute[]                    @relation("DisputeResolver")
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  verificationStatus       String                       @default("UNVERIFIED")
   verificationIdUrl        String?
   verificationSelfieUrl    String?
   verificationSubmittedAt  DateTime?
   consentAcceptedAt        DateTime?
-  tokenBalance             Int                 @default(0)
-  walletInitialized        Boolean             @default(false)
+  tokenBalance             Int                          @default(0)
+  walletInitialized        Boolean                      @default(false)
   walletTransactions       WalletTransaction[]
-  tenantEngagements        Engagement[]        @relation("TenantEngagements")
-  landlordEngagements      Engagement[]        @relation("LandlordEngagements")
+  tenantEngagements        Engagement[]                 @relation("TenantEngagements")
+  landlordEngagements      Engagement[]                 @relation("LandlordEngagements")
   listingRestorations      ListingRestoration[]
   pushSubscription         UserPushSubscription?
   notificationPreferences  UserNotificationPreferences?
+  adminInvitations         UserInvitation[]             @relation("AdminInvitations")
+  invitation               UserInvitation?
+  createdImportBatches     AdminImportBatch[]           @relation("AdminImportBatches")
+  onboardingStatus         String                       @default("not_started")
+  onboardingCompletedAt    DateTime?
+}
+
+model AdminImportBatch {
+  id          String           @id @default(cuid())
+  adminId     String
+  admin       User             @relation("AdminImportBatches", fields: [adminId], references: [id])
+  fileName    String
+  totals      Json?
+  rows        AdminImportRow[]
+  invitations UserInvitation[]
+  createdAt   DateTime         @default(now())
+}
+
+model AdminImportRow {
+  id        String           @id @default(cuid())
+  batchId   String
+  batch     AdminImportBatch @relation(fields: [batchId], references: [id])
+  rowNumber Int
+  email     String?
+  payload   Json
+  status    String           @default("PENDING")
+  errors    Json?
+  createdAt DateTime         @default(now())
+}
+
+model UserInvitation {
+  id        String            @id @default(cuid())
+  userId    String            @unique
+  user      User              @relation(fields: [userId], references: [id])
+  adminId   String?
+  admin     User?             @relation("AdminInvitations", fields: [adminId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  status    String            @default("PENDING")
+  batchId   String?
+  batch     AdminImportBatch? @relation(fields: [batchId], references: [id])
+  createdAt DateTime          @default(now())
+  sentAt    DateTime?
+  revokedAt DateTime?
+  claimedAt DateTime?
+
+  @@index([tokenHash])
+  @@index([status, expiresAt])
 }
 
 model Listing {
-  id                   String    @id @default(cuid())
+  id                   String               @id @default(cuid())
   name                 String
   description          String
   address              String
   phoneNumber          String
   monthlyRent          Float
-  province             String    @default("")
-  city                 String    @default("")
-  addressLine          String    @default("")
+  province             String               @default("")
+  city                 String               @default("")
+  addressLine          String               @default("")
   lat                  Float?
   lng                  Float?
-  amenities            Json      @default("{}")
-  status               String    @default("active")
+  amenities            Json                 @default("{}")
+  status               String               @default("active")
   earlyAccessUntil     DateTime?
   publishedAt          DateTime?
   paymentDeadline      DateTime?
@@ -241,14 +289,14 @@ model Listing {
   bedrooms             Int?
   totalRooms           Int
   furnished            Boolean
-  type                 String    @default("rent")
+  type                 String               @default("rent")
   offer                Boolean
-  studentAccommodation Boolean   @default(false)
-  imageUrls            Json      @default("[]")
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  studentAccommodation Boolean              @default(false)
+  imageUrls            Json                 @default("[]")
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   userId               String
-  user                 User      @relation(fields: [userId], references: [id])
+  user                 User                 @relation(fields: [userId], references: [id])
   payments             Payment[]
   engagements          Engagement[]
   restorations         ListingRestoration[]

@@ -33,6 +33,7 @@ import AppButton from "../../components/ui/AppButton";
 import AppInput from "../../components/ui/AppInput";
 import AppSelect from "../../components/ui/AppSelect";
 import MUITable from "../../components/MUITable";
+import BulkImportDialog from "./components/BulkImportDialog";
 import { Heading, SubHeading } from "../../components/Heading";
 import ToastAlert from "../../components/ToastAlert/ToastAlert";
 import {
@@ -212,6 +213,7 @@ const AdminDashboard: React.FC = () => {
   const ROWS_PER_PAGE = 20;
 
   const [activeTab, setActiveTab] = useState<AdminTab>("expired");
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>({
     open: false,
     message: "",
@@ -1606,6 +1608,9 @@ const AdminDashboard: React.FC = () => {
           <SubHeading sx={{ color: "text.secondary" }}>
             Manage listings, providers, and bookings.
           </SubHeading>
+          <Box sx={{ mt: 2 }}>
+            <AppButton onClick={() => setBulkImportOpen(true)}>Bulk Import Users</AppButton>
+          </Box>
         </Box>
 
         <Tabs
@@ -1644,11 +1649,13 @@ const AdminDashboard: React.FC = () => {
         {activeTab === "legal" && renderLegalDocs()}
       </AppContainer>
 
+      <BulkImportDialog open={bulkImportOpen} onClose={() => setBulkImportOpen(false)} />
+
       <ToastAlert
-        appearence={toast.open}
-        type={toast.type}
-        message={toast.message}
-        handleClose={() => setToast((previous) => ({ ...previous, open: false }))}
+      appearence={toast.open}
+      type={toast.type}
+      message={toast.message}
+      handleClose={() => setToast((previous) => ({ ...previous, open: false }))}
       />
       <Dialog
         open={actionDialog.open}
