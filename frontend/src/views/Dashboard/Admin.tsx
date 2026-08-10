@@ -314,6 +314,14 @@ const AdminDashboard: React.FC = () => {
   const [archiveLegalDoc, { isLoading: isArchivingLegalDoc }] =
     useArchiveLegalDocMutation();
 
+  const { data: usersData, isFetching: isFetchingUsers } =
+    useGetAdminUsersQuery({ page: 1, limit: 50 });
+  const { data: invitationsData, isFetching: isFetchingInv } = useListInvitationsQuery();
+  const [resendInvitation, { isLoading: isResendingInvitation }] =
+    useResendInvitationMutation();
+  const [revokeInvitation, { isLoading: isRevokingInvitation }] =
+    useRevokeInvitationMutation();
+
   const listings = inactiveData?.data ?? [];
   const totalListings = inactiveData?.total ?? 0;
   const totalPages = Math.ceil(totalListings / ROWS_PER_PAGE);
@@ -1550,10 +1558,6 @@ const AdminDashboard: React.FC = () => {
   );
 
   const renderUsers = () => {
-    const { data: usersData, isFetching: isFetchingUsers } = useGetAdminUsersQuery({ page: 1, limit: 50 });
-    const { data: invitationsData, isFetching: isFetchingInv } = useListInvitationsQuery();
-    const [resendInvitation] = useResendInvitationMutation();
-    const [revokeInvitation] = useRevokeInvitationMutation();
 
     const users = usersData?.data ?? [];
     const invitations = invitationsData?.data ?? [];
