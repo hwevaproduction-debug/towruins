@@ -8,7 +8,8 @@ export const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: getApiBaseUrl(),
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth?.user?.token;
+      const authState = (getState() as RootState).auth?.user;
+      const token = authState?.token ?? authState?.data?.token;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
@@ -33,6 +34,7 @@ export const apiSlice = createApi({
     "Accommodation",
     "ListingDraft",
     "ProviderAnalytics",
+    "TemporaryStay",
     "RoomCalendar",
     "SeasonalRate",
     "RoomFee",
