@@ -70,8 +70,8 @@ const Login = () => {
       const user: any = await loginUser(payload);
 
       if (user?.data?.status) {
-        dispatch(setUser(user?.data));
-        localStorage.setItem("user", JSON.stringify(user?.data));
+        dispatch(setUser(user));
+        localStorage.setItem("user", JSON.stringify(user));
         const from = (location.state as any)?.from;
         const openContact = (location.state as any)?.openContact;
         if (from && from !== "/login" && from !== "/signup") {

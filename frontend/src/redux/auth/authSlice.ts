@@ -33,13 +33,21 @@ export const getAuthUserId = (authUser: unknown) => {
   );
 };
 
-const getInitialUser = () => {
-  const localStorageItem = localStorage.getItem("user");
-  if (localStorageItem) {
-    return JSON.parse(localStorageItem);
-  } else {
+const parseStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
     return null;
   }
+};
+
+const getInitialUser = () => {
+  return parseStoredUser();
+};
+
+export const getStoredUserToken = () => {
+  const storedUser = parseStoredUser();
+  return storedUser?.token ?? storedUser?.data?.token ?? null;
 };
 
 const authSlice = createSlice({
@@ -58,9 +66,9 @@ export const { setUser } = authSlice.actions;
 export default authSlice.reducer;
 
 export const selectedUserId = (state: RootState) =>
-  state.auth?.user?.data?.user?._id;
+  state.auth?.user?._id ?? state.auth?.user?.data?.user?._id;
 export const selectedUserToken = (state: RootState) =>
-  state.auth?.user?.token;
+  state.auth?.user?.token ?? state.auth?.user?.data?.token;
 export const selectedUserName = (state: RootState) =>
   state.auth?.user?.data?.user?.username;
 export const selectedUserEmail = (state: RootState) =>
