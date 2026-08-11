@@ -413,7 +413,7 @@ test("listing uploads remain landlord-only even in tenant-payer mode", async () 
 
   assert.equal(result.statusCode, 403);
   assert.equal(result.body.status, "fail");
-  assert.equal(result.body.message, "Landlord role required to publish listings");
+  assert.equal(result.body.message, "Landlord or provider role required to publish listings");
 });
 
 test("retryPayment blocks legacy non-booking payments from provider retries", async () => {

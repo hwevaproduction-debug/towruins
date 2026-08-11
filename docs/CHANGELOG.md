@@ -1,5 +1,49 @@
 # 26
 
+## 0811
+
+### 0654
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | provider-listing-upload-auth-0654      |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Backend: uploadController authorization and ownership validation for listing media
+
+#### Summary
+
+- Root cause: uploadController restricted listing uploads to the `landlord` role only; the current domain model allows `provider` users to create/manage listings. Additionally, the controller used `req.user._id` which does not match the Prisma `user.id` in auth middleware, leading to inconsistent object keys.
+- Fix: Allowed roles for `listings` uploads are now `landlord`, `provider` and administrative roles (`admin`, `super_admin`). If a `listingId` is supplied the controller verifies the listing exists and belongs to the requesting user (unless admin). Also normalized user id extraction to use `req.user.id || req.user._id` and preserved existing content-type and folder allowlisting.
+- Tests: Updated unit test expectation and ran backend unit tests for the upload and monetization rules; relevant tests pass locally.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/controllers/uploadController.js |
+| Modified | backend/tests/monetizationRules.test.js |
+| Modified | docs/CHANGELOG.md                       |
+
+#### Build Validation
+
+Ran: `cd backend && node --test tests/uploadController.test.js && node --test tests/monetizationRules.test.js` — unit tests passed. Some webhook tests attempt DB connections in this environment and emit warnings but do not fail the suite.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | 57b9d0f (this change will be included) |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
 ## 0810
 
 ### 1722
