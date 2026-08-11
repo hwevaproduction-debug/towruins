@@ -2,6 +2,8 @@ const express = require("express");
 const { protect, requireRole } = require("../controllers/authController");
 const adminController = require("../controllers/adminController");
 const adminOnboardController = require("../controllers/adminOnboardController");
+const adminUserController = require("../controllers/adminUserController");
+const legalDocController = require("../controllers/legalDocController");
 const multer = require("multer");
 
 const router = express.Router();
@@ -93,5 +95,16 @@ router.post("/temporary-stays/:id/publish", adminController.publishTemporaryStay
 router.post("/temporary-stays/:id/unpublish", adminController.unpublishTemporaryStay);
 router.post("/temporary-stays/:id/suspend", adminController.suspendTemporaryStay);
 router.post("/temporary-stays/:id/reinstate", adminController.reinstateTemporaryStay);
+
+// Admin users
+router.get("/users", adminUserController.getAdminUsers);
+router.get("/users/:id", adminUserController.getAdminUserById);
+
+// Admin legal documents
+router.get("/legal-docs", legalDocController.listDocs);
+router.get("/legal-docs/:slug/history", legalDocController.getDocHistory);
+router.post("/legal-docs", legalDocController.createDoc);
+router.put("/legal-docs/:id", legalDocController.updateDoc);
+router.delete("/legal-docs/:id", legalDocController.archiveDoc);
 
 module.exports = router;

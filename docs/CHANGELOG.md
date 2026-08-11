@@ -258,6 +258,87 @@ Database schema already included models for this feature:
 - Deployment requires DATABASE_URL for Prisma connection
 - CSV format: firstName, lastName, email, role, phoneNumber (all except phoneNumber required)
 
+## 0811
+
+### 1015
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | admin-users-legal-docs-1015            |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Backend: Admin Users API + Admin Legal Documents API
+
+#### Summary
+
+- Root cause: Frontend admin dashboard calls `/api/v1/admin/users` and `/api/v1/admin/legal-docs` but the backend had not exposed those admin routes, causing 404s.
+- Fix: Implemented secure admin user list/detail endpoints and wired existing legal document controller into the admin router so the admin dashboard can manage legal documents (list, history, create, update, archive).
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | backend/controllers/adminUserController.js |
+| Modified | backend/routes/adminRoutes.js (added admin/users and admin/legal-docs routes) |
+| Reused   | backend/controllers/legalDocController.js (exposed via admin routes) |
+
+#### Database
+No schema migrations required. Existing LegalDocument and User models were reused.
+
+#### Frontend
+Frontend already uses `frontend/src/redux/api/adminApiSlice.ts` expecting these endpoints; no frontend changes required.
+
+#### Endpoints Implemented (all protected by protect + requireRole("admin"))
+
+**Admin Users**
+- GET  /api/v1/admin/users?page=1&limit=20&search=&role=&onboardingStatus=
+  - Returns paginated user list with safe fields (no passwords/tokens)
+  - Supports search by username/email, filtering by role and onboarding status
+  - Response: `{ status: "success", total, results, data: [] }`
+- GET  /api/v1/admin/users/:id
+  - Returns user detail with related resource counts (listings, payments, etc.)
+  - Response: `{ status: "success", data: { id, _id, username, email, role, providerProfile, onboardingStatus, createdAt, updatedAt, _count } }`
+
+**Admin Legal Documents**
+- GET  /api/v1/admin/legal-docs
+- GET  /api/v1/admin/legal-docs/:slug/history
+- POST /api/v1/admin/legal-docs
+- PUT  /api/v1/admin/legal-docs/:id
+- DELETE /api/v1/admin/legal-docs/:id
+
+#### Observations
+
+Frontend Admin Dashboard only calls:
+- `useGetAdminUsersQuery()` — read-only display
+- Invitations management — already implemented
+
+**No user mutations observed in UI.** The admin dashboard displays users in read-only tables and manages invitations (resend/revoke via existing endpoints). Following the project instruction "Do not invent operations merely to make the API look complete. The backend must be the source of truth," user mutations (create, update, suspend, etc.) were not implemented because they are not called by the UI.
+
+#### Security & Auditing
+- All admin routes protected by existing middleware (protect + requireRole("admin"))
+- Responses explicitly select safe fields; passwords, tokens, OTPs never returned
+- Admin view actions write audit entries via existing auditLog utility (non-blocking)
+
+#### Testing / Validation
+- Ran backend unit tests: 143 passed, 4 failed (due to missing postgres:5432 in test environment, unrelated to these changes)
+- Contract alignment: existing adminApiSlice endpoints match new backend routes
+- Public legal-docs endpoint (`/api/v1/legal-docs/:slug`) remains unchanged; only `isActive=true` documents exposed to public
+
+#### Remaining Work
+- If future UI calls warrant: admin user mutations (create, update, suspend, activate roles, resend invitations)
+- Run full CI/build with DATABASE_URL set and e2e tests to validate audit/logging integration
+
+#### Notes
+- No fixtures or mocks were created; existing business logic in adminUserController explicitly selects safe fields
+- Existing infrastructure reused: auth (JWT, requireRole), audit logging, role system, LegalDocument model/lifecycle
+- Deployment: no changes to .env or configuration needed
+
+#### Git
+Commit will include Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
 #### Git
 | Field          | Value              |
 | -------------- | ------------------ |
