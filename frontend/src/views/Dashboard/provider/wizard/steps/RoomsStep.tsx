@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Grid, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Button, Grid, MenuItem, Paper, Stack, TextField, Typography, Box, Chip, Tooltip } from "@mui/material";
 import { toEntityArray, useCreateRoomMutation, useGetMyRoomsQuery } from "../../../../../redux/api/providerApiSlice";
 
 type RoomsStepProps = {
@@ -16,6 +16,12 @@ const RoomsStep = ({ accommodationId, onNext, onBack }: RoomsStepProps) => {
 
   return (
     <Stack spacing={2}>
+      <Box>
+        <Typography variant="h6">Property details</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Tell guests what your property offers. Name and Price are required before creating a room.
+        </Typography>
+      </Box>
       {rooms.map((room) => <Paper key={room?._id || room?.id} variant="outlined" sx={{ p: 1.5 }}><Typography fontWeight={700}>{room?.name}</Typography><Typography variant="body2">{room?.roomType} · {room?.capacity} guests</Typography></Paper>)}
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}><TextField fullWidth label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Grid>

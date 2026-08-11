@@ -22,6 +22,7 @@ import {
 } from "../../../redux/api/providerApiSlice";
 import StatCard from "./components/StatCard";
 import ListingWizard from "./wizard/ListingWizard";
+import ProviderTourDialog from "./wizard/ProviderTourDialog";
 
 const RoomsTab = React.lazy(() => import("./tabs/RoomsTab"));
 const BookingsTab = React.lazy(() => import("./tabs/BookingsTab"));
@@ -41,6 +42,7 @@ const formatCurrency = (value: any) =>
 const ProviderDashboardShell = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const isoDate30DaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const isoDateToday = new Date().toISOString().slice(0, 10);
   const { data: roomsResponse, refetch: refetchRooms } = useGetMyRoomsQuery(undefined);
@@ -75,7 +77,7 @@ const ProviderDashboardShell = () => {
         >
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: { xs: "flex-start", md: "center" }, flexDirection: { xs: "column", md: "row" }, gap: 2 }}>
             <Box>
-              <Typography variant="h4" fontWeight={800} color="#fff">{businessName}</Typography>
+              <Typography variant="h4" fontWeight={800} color="#fff" data-tour-id="provider-dashboard-header">{businessName}</Typography>
               <Chip
                 size="small"
                 label={String(accommodation?.verificationStatus || profile?.providerProfile?.verificationStatus || "PENDING").replace(/_/g, " ")}
@@ -86,9 +88,14 @@ const ProviderDashboardShell = () => {
                 }
               />
             </Box>
-            <AppButton startIcon={<AddIcon />} onClick={() => setWizardOpen(true)}>
-              Create Listing
-            </AppButton>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <AppButton startIcon={<AddIcon />} data-tour-id="create-listing-button" onClick={() => setWizardOpen(true)}>
+                Create Listing
+              </AppButton>
+              <AppButton variant="outlined" size="small" onClick={() => setTourOpen(true)} data-tour-id="start-tour-button" sx={{ ml: 1 }}>
+                Take guided tour
+              </AppButton>
+            </Box>
           </Box>
         </AppCard>
 
@@ -145,6 +152,7 @@ const ProviderDashboardShell = () => {
         </Suspense>
       </AppContainer>
       <ListingWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+    <ProviderTourDialog open={tourOpen} onClose={() => setTourOpen(false)} />
     </Box>
   );
 };

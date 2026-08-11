@@ -912,8 +912,8 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       query: ({ token, password }) => ({ url: "account/claim", method: "POST", body: { token, password } }),
     }),
 
-    completeOnboarding: builder.mutation<any, void>({
-      query: () => ({ url: "account/onboarding/complete", method: "POST" }),
+    completeOnboarding: builder.mutation<any, { skipped?: boolean } | void>({
+      query: (body) => ({ url: "account/onboarding/complete", method: "POST", body }),
       invalidatesTags: ["User"],
     }),
 

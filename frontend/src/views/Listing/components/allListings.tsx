@@ -169,7 +169,7 @@ const AllListings = () => {
             color: "#fff",
           }}
         >
-          <Box sx={{ fontSize: { xs: "1.5rem", md: "2rem" }, fontWeight: 800 }}>
+          <Box sx={{ fontSize: { xs: "1.5rem", md: "2rem" }, fontWeight: 800 }} data-tour-id="provider-listings-section">
             Your Listings
           </Box>
           <Box sx={{ opacity: 0.75, mt: 0.5 }}>
@@ -197,13 +197,18 @@ const AllListings = () => {
                 You haven't created any listings. Get started by creating your
                 first property listing.
               </SubHeading>
-              <AppButton
-                onClick={() => {
-                  navigate("/create-listing");
-                }}
-              >
-                Create your first listing
-              </AppButton>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                <AppButton
+                  onClick={() => {
+                    navigate("/create-listing");
+                  }}
+                >
+                  Create your first listing
+                </AppButton>
+                <AppButton variant="outlined" onClick={() => { navigate('/dashboard/provider'); }}>
+                  Take guided tour
+                </AppButton>
+              </Box>
             </AppCard>
           ) : (
             <>

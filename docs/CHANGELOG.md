@@ -1285,3 +1285,61 @@ Aligned the auth, listing, payment, engagement, and notification flows with the 
 | Branch         | awsfullmig         |
 | Commit(s)      | c185179            |
 | Generated From | git diff + git log |
+
+## 0811
+
+### 0900
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | provider-onboarding-0900               |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Feature                                |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: Provider onboarding, listing wizard hints, contextual help and guided tour
+
+#### Summary
+
+- Added a role-aware provider onboarding tour accessible from the Provider Dashboard. The tour highlights dashboard elements and explains what to do next.
+- Introduced contextual, inline hints across the listing creation wizard (Basic information, Rooms, Images, Pricing, Policies, Review). Hints explain required vs optional fields, provide short examples, and show why fields matter for publication.
+- Implemented a small non-opinionated guided tour component (no external deps) that anchors to elements via data attributes. The tour is UI-state-isolated and does not trigger autosave or remounts.
+- Reused existing onboarding persistence: completion is sent to POST /api/v1/account/onboarding/complete so server-side onboardingStatus is updated.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/views/Dashboard/provider/ProviderDashboardShell.tsx |
+| Created  | frontend/src/views/Dashboard/provider/wizard/ProviderTourDialog.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/AccommodationStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/RoomsStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ImagesStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/PricingStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/PoliciesStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ReviewStep.tsx |
+| Modified | frontend/src/views/Listing/components/allListings.tsx |
+| Modified | frontend/src/redux/api/adminApiSlice.ts |
+| Modified | docs/CHANGELOG.md |
+
+#### Accessibility
+
+- Tour supports keyboard navigation (Arrow keys, Escape), focusable controls, readable text and high-contrast highlights.
+
+#### Tests / Validation
+
+- Manual verification: First-time provider flow — dashboard tour -> create listing wizard hints -> save draft -> publish flow.
+- Verified that hints are UI-state-isolated (do not trigger autosave or form remounts) and use existing autosave endpoints only for persistence.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging |
+| Commit(s)      | f45bd46 |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
