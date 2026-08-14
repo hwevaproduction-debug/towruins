@@ -12,6 +12,12 @@ const ProtectedRoutes = ({ allowedRoles, children }: ProtectedRoutesProps) => {
   const location = useLocation();
   const authUser = useTypedSelector((state) => state.auth?.user);
   const role = useTypedSelector(selectedUserRole);
+  console.log("[ProtectedRoutes]", {
+  path: location.pathname,
+  authUser,
+  role,
+  allowedRoles,
+});
   const destination =
     role === "admin" || role === "super_admin"
       ? "/dashboard/admin"

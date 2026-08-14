@@ -867,30 +867,12 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Provider", "AdminListing", "AuditLog"],
     }),
-    listInvitations: builder.query<
-      {
-        data: {
-          invitations: any[];
-          pagination?: {
-            page: number;
-            limit: number;
-            total: number;
-            pages: number;
-          };
-        };
-      },
-      void
-    >({
+    listInvitations: builder.query<{ data: any[] }, void>({
       query: () => ({ url: "admin/invitations", method: "GET" }),
       providesTags: (result) =>
         result
           ? [
-              ...(Array.isArray(result.data?.invitations)
-                ? result.data.invitations.map((inv: any) => ({
-                    type: "Invitation" as const,
-                    id: inv.id,
-                  }))
-                : []),
+              ...result.data.map((inv: any) => ({ type: "Invitation" as const, id: inv.id })),
               { type: "Invitation" as const, id: "LIST" },
             ]
           : [{ type: "Invitation" as const, id: "LIST" }],

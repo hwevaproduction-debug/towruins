@@ -1618,7 +1618,7 @@ const AdminDashboard: React.FC = () => {
   const renderUsers = () => {
 
     const users = usersData?.data ?? [];
-    const invitations = invitationsData?.data?.invitations ?? [];
+    const invitations = invitationsData?.data ?? [];
 
     const handleResend = async (id: string) => {
       try {
