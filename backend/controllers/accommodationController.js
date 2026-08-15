@@ -87,6 +87,81 @@ exports.getMyAccommodation = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.createAccommodation = catchAsync(async (req, res, next) => {
+  // Only allow creation for verified providers
+  const normalizeEnumInput = (value) => {
+    if (value == null || value === "") return null;
+    return String(value).trim().toUpperCase().replace(/[\s-]+/g, "_");
+  };
+
+  if (normalizeEnumInput(req.user?.providerProfile?.verificationStatus) !== "APPROVED") {
+    return next(new AppError("Provider verification required", 403));
+  }
+
+  const input = { ...req.body };
+  delete input.provider;
+  delete input.providerProfile;
+  delete input.providerId;
+  delete input._id;
+  delete input.id;
+
+  const requiredFields = ["name", "type", "contactPhone", "province", "city", "addressLine"];
+  for (const f of requiredFields) {
+    if (!input[f]) {
+      return next(new AppError(`${f} is required`, 400));
+    }
+  }
+
+  // Pick allowed fields
+  const updates = pickFields(input, [
+    "name",
+    "description",
+    "contactPhone",
+    "province",
+    "city",
+    "addressLine",
+    "timezone",
+    "type",
+    "isPublished",
+  ]);
+
+  // Generate a simple kebab-case slug and ensure uniqueness
+  const toSlug = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 240);
+
+  let slugBase = toSlug(updates.name || "accommodation");
+  let slug = slugBase;
+  let suffix = 1;
+  // Ensure uniqueness
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const existing = await prisma.accommodation.findUnique({ where: { slug } });
+    if (!existing) break;
+    slug = `${slugBase}-${suffix++}`;
+  }
+
+  const accommodation = await prisma.accommodation.create({
+    data: {
+      ownerId: getUserId(req.user),
+      slug,
+      verificationStatus: "APPROVED",
+      moderationStatus: "APPROVED",
+      ...updates,
+    },
+  });
+
+  mapId(accommodation);
+
+  res.status(201).json({
+    status: "success",
+    data: { accommodation },
+  });
+});
+
 exports.updateAccommodation = catchAsync(async (req, res) => {
   await ensureOwnsAccommodation(req.params.id, getUserId(req.user));
 

@@ -8,9 +8,10 @@ export const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: getApiBaseUrl(),
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth?.user?.token;
+      const authState = (getState() as RootState).auth?.user;
+      const token = authState?.token ?? authState?.data?.token;
       if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+        headers.set("authorization", "Bearer " + token);
       }
       return headers;
     },
@@ -24,6 +25,7 @@ export const apiSlice = createApi({
     "Provider",
     "AdminBooking",
     "Room",
+    "TemporaryStay",
     "ProviderBooking",
     "ProviderProfile",
     "ProviderAvailability",
@@ -32,6 +34,7 @@ export const apiSlice = createApi({
     "Accommodation",
     "ListingDraft",
     "ProviderAnalytics",
+    "TemporaryStay",
     "RoomCalendar",
     "SeasonalRate",
     "RoomFee",
@@ -47,6 +50,15 @@ export const apiSlice = createApi({
     "ProviderReview",
     "LegalDoc",
     "WalletTransaction",
+
+    // Admin/onboarding tags
+    "Invitation",
+    "User",
+    "AuditLog",
+    "AdminAccommodation",
+    "AdminReview",
+    "Dispute",
+    "Report",
   ],
   endpoints: (builder) => ({}),
 });

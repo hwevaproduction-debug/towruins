@@ -24,7 +24,7 @@ import {
   useGetR2SignedUrlMutation,
   type R2SignedUrlData,
 } from "../../redux/api/uploadApiSlice";
-import { selectedUserId, selectedUserToken } from "../../redux/auth/authSlice";
+import { selectedUserId, selectedUserToken, selectedUserRole } from "../../redux/auth/authSlice";
 // Hooks Imports
 import useTypedSelector from "../../hooks/useTypedSelector";
 // Custom Imports
@@ -92,6 +92,7 @@ const CreateListing = () => {
   const { id } = useParams();
   const userId = useTypedSelector(selectedUserId);
   const token = useTypedSelector(selectedUserToken);
+  const userRole = useTypedSelector(selectedUserRole);
   const [getR2SignedUrl] = useGetR2SignedUrlMutation();
   const has401FiredRef = useRef(false);
   const restoredDraftRef = useRef(false);
@@ -160,6 +161,17 @@ const CreateListing = () => {
         type: "error",
       });
       navigate("/login");
+      return;
+    }
+
+    // Ensure user has publishing role before attempting direct uploads
+    if (userRole !== "landlord") {
+      setToast({
+        ...toast,
+        message: "Uploading listing images requires a landlord account. Contact support to upgrade your account or check your role.",
+        appearence: true,
+        type: "error",
+      });
       return;
     }
 
@@ -234,15 +246,15 @@ const CreateListing = () => {
   const listingHandler = async (data: listingForm) => {
     const resolvedUserId = userId;
 
-    if (!resolvedUserId) {
-      setToast({
-        ...toast,
-        message: "Session expired. Please log in again.",
-        appearence: true,
-        type: "error",
-      });
-      return;
-    }
+      if (!resolvedUserId) {
+        setToast({
+          ...toast,
+          message: "Session expired. Please log in again.",
+          appearence: true,
+          type: "error",
+        });
+        return;
+      }
 
     const rawPhoneNumber = (data.phoneNumber || "").trim();
     const phoneWithPlus = rawPhoneNumber.startsWith("+")
@@ -409,7 +421,7 @@ const CreateListing = () => {
           internet: false,
         },
       });
-      setImageUrls(listingData?.data?.imageUrls);
+      setImageUrls(listingData?.data?.imageUrls ?? []);
     }
   }, [id, listingData, listingSuccess]);
 

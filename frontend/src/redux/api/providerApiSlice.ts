@@ -225,6 +225,14 @@ export const providerApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: [{ type: "Accommodation", id: "MINE" }],
     }),
+    createAccommodation: builder.mutation({
+      query: (data) => ({
+        url: "accommodations",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: [{ type: "Accommodation", id: "MINE" }],
+    }),
     updateAccommodation: builder.mutation({
       query: ({ id, payload }) => ({
         url: `accommodations/${id}`,
@@ -539,6 +547,7 @@ export const {
   useUpdateProviderProfileMutation,
   useGetProviderSettlementsSummaryQuery,
   useGetMyAccommodationQuery,
+  useCreateAccommodationMutation,
   useUpdateAccommodationMutation,
   useAddAccommodationImageMutation,
   useDeleteAccommodationImageMutation,

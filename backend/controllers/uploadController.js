@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const AppError = require('../utils/appError');
+const prisma = require('../utils/prisma');
 
 const s3ClientConfig = {
   region: process.env.S3_REGION || process.env.AWS_REGION,
@@ -213,17 +214,32 @@ exports.getSignedUploadUrl = async (req, res, next) => {
     }
 
     if (normalizedFolder === "listings") {
-      if (!req.user || req.user.role !== "landlord") {
+      const allowedListingUploadRoles = ["landlord", "provider", "admin", "super_admin"];
+      if (!req.user || !allowedListingUploadRoles.includes(req.user.role)) {
         return res.status(403).json({
           status: "fail",
-          message: "Landlord role required to publish listings",
+          message: "Landlord or provider role required to publish listings",
         });
+      }
+
+      // If the client supplied a listingId, verify ownership (or admin)
+      const listingId = req.query?.listingId || req.query?.resourceId || null;
+      if (listingId) {
+        const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+        if (!listing) {
+          return res.status(404).json({ status: 'fail', message: 'Listing not found' });
+        }
+
+        const currentUserId = (req.user?.id || req.user?._id || '').toString();
+        if (listing.userId !== currentUserId && !["admin", "super_admin"].includes(req.user.role)) {
+          return res.status(403).json({ status: 'fail', message: 'Not authorized to upload media for this listing' });
+        }
       }
     }
 
     const ext = (contentType.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '');
     const random = crypto.randomBytes(10).toString('hex');
-    const userId = req.user?._id?.toString() || 'anon';
+    const userId = (req.user?.id || req.user?._id || 'anon').toString();
 
     const key = `${normalizedFolder}/${userId}/${Date.now()}-${random}.${ext}`;
 

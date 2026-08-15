@@ -39,6 +39,7 @@ import {
 } from "../../redux/global/globalSlice";
 // Utils Imports
 import { getApiBaseUrl } from "../../utils";
+import { getStoredUserToken } from "../../redux/auth/authSlice";
 
 const sortTypes = [
   {
@@ -418,7 +419,7 @@ const SearchPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const searchText = useTypedSelector(selectedSearchText);
-  const token = JSON.parse(localStorage.getItem("user") || "null")?.token;
+  const token = getStoredUserToken();
   const apiBase = getApiBaseUrl();
 
   const [sideBarData, setSideBarData] = useState<any>(defaultSideBarData);

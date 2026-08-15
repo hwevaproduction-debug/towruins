@@ -1,5 +1,484 @@
 # 26
 
+## 0811
+
+### 0654
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | provider-listing-upload-auth-0654      |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Backend: uploadController authorization and ownership validation for listing media
+
+#### Summary
+
+- Root cause: uploadController restricted listing uploads to the `landlord` role only; the current domain model allows `provider` users to create/manage listings. Additionally, the controller used `req.user._id` which does not match the Prisma `user.id` in auth middleware, leading to inconsistent object keys.
+- Fix: Allowed roles for `listings` uploads are now `landlord`, `provider` and administrative roles (`admin`, `super_admin`). If a `listingId` is supplied the controller verifies the listing exists and belongs to the requesting user (unless admin). Also normalized user id extraction to use `req.user.id || req.user._id` and preserved existing content-type and folder allowlisting.
+- Tests: Updated unit test expectation and ran backend unit tests for the upload and monetization rules; relevant tests pass locally.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/controllers/uploadController.js |
+| Modified | backend/tests/monetizationRules.test.js |
+| Modified | docs/CHANGELOG.md                       |
+
+#### Build Validation
+
+Ran: `cd backend && node --test tests/uploadController.test.js && node --test tests/monetizationRules.test.js` — unit tests passed. Some webhook tests attempt DB connections in this environment and emit warnings but do not fail the suite.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | 57b9d0f (this change will be included) |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
+## 0810
+
+### 1722
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | build-fix-temporarystay-tag-1722       |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: RTK Query tag registration and cache invalidation fixes
+
+#### Summary
+
+- Root cause: Admin TemporaryStay RTK Query endpoints used tag "TemporaryStay" but the canonical createApi tagTypes did not register it, causing TS type error TS2322 during build.
+- Fix: Added "TemporaryStay" to apiSlice's tagTypes. Verified all admin Temporary Stay endpoints (getTemporaryStays, getTemporaryStayById, createTemporaryStay, updateTemporaryStay, publishTemporaryStay, unpublishTemporaryStay, deleteTemporaryStay, restoreTemporaryStay) use the same tag and follow LIST + entity invalidation patterns.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/redux/api/apiSlice.ts (added "TemporaryStay" tagType)
+| Modified | frontend/src/redux/api/adminStayApiSlice.ts (uses existing "TemporaryStay" tags; validated tag usage)
+
+#### Build Validation
+
+Attempted: cd frontend && npm run build
+Result: Failed in this environment with "react-scripts: not found". The TypeScript tag mismatch is fixed in-source; please run CI or run `npm ci && npm run build` locally/CI to fully validate the build and produce final artifacts.
+
+#### Notes
+
+- No new API slices were created. The canonical apiSlice was updated in place.
+- Cache invalidation: mutations invalidate both the entity id and the LIST tag to ensure list/detail refreshes as expected.
+
+#### Git
+
+Commit will include Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+
+## 0810
+
+### 1325
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1325                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: listing modal autosave, draft persistence, and authorization fixes |
+
+#### Summary
+
+Fixed a root cause that caused the listing creation/edit modal to visually blink/reset during autosave. Root causes and fixes:
+
+- Root cause: background autosave caused RTK Query invalidation of the ListingDraft tag which triggered getListingDraft refetches; combined with autosave timing and authorization failures this caused the modal to show "Loading" (a remount-like visual) and lose visual state.
+- Authorization: ensured the API layer sends Authorization properly and added a non-invalidating autosave endpoint to avoid refetch/remounts from background saves.
+- Autosave behavior: replaced tight/unstable autosave with a debounced autosave (1.5s), serialized in-flight autosaves, avoided stale-closure overwrites, cancelled timers on unmount, and kept failures non-destructive and non-verbose.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/redux/api/listingApiSlice.ts (added autosaveListingDraft mutation)
+| Modified | frontend/src/views/Dashboard/provider/wizard/ListingWizard.tsx (use autosave endpoint, serialize saves, non-disruptive error handling)
+
+#### Database
+No schema migrations required.
+
+#### Tests
+Manual scenarios exercised locally (manual QA):
+- Scenario A — normal typing: verified single autosave after 1.5s of inactivity.
+- Scenario B — rapid changes: verified only the final autosave persisted.
+- Scenario C — API failure (403 simulated): modal did not blink or remount; form values and wizard step preserved; no repeated toasts.
+- Scenario F — modal close: pending timers cleared and no autosave fired after unmount.
+
+#### Notes
+- Implemented a dedicated non-invalidating autosave mutation so background saves do not trigger a refetch of the draft (avoids remounting the form).  
+- Autosave failures are now surfaced with a small, local status indicator (Saving / Saved / Unable to save) and do not trigger global toasts.
+- Authorization issues were investigated; autosave now uses the same authenticated baseQuery path and will not weaken backend authorization.
+- Branch: stagging
+- Commits: 60866b7, 8812e5e
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | 60866b7, 8812e5e   |
+| Generated From | git diff + git log |
+
+
+### 0756
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0756                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Chore                                  |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: add package-lock.json to enable Docker npm ci |
+
+#### Summary
+Added frontend/package-lock.json so Docker builds can run npm ci deterministically. Generated with npm install --package-lock-only --legacy-peer-deps.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | frontend/package-lock.json             |
+
+#### Database
+No schema migrations required.
+
+#### Tests
+N/A
+
+#### Notes
+Committed on branch stagging (be83555). Generated from git diff + git log.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | be83555            |
+| Generated From | git diff + git log |
+
+### 0628
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0628                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Provider listing publication and onboarding clarity fixes |
+
+#### Summary
+Investigated provider listing and stay publication flows. Root causes identified: public stay feed exposes rooms (Room.status === AVAILABLE) and requires Accommodation.isPublished + verificationStatus === APPROVED; legacy Listing feed uses Listing.status === "active". Providers were publishing but missing required rooms or lacking the landlord role for image uploads. Implemented frontend safeguards: prevent publishing an accommodation with zero rooms; surface clear error when attempting to upload listing images without the landlord role; improved publish button validation and messaging in the provider wizard and listing creation flow.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ReviewStep.tsx |
+| Modified | frontend/src/views/Listing/index.tsx    |
+
+#### Database
+No schema migrations required.
+
+#### Tests
+Added manual reproduction steps; unit/e2e tests to follow in a subsequent pass.
+
+#### Notes
+This is a targeted, low-risk UI validation fix; backend publication rules and moderation were preserved.
+
+## 0810
+
+### 0242
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 0242                                   |
+| Date       | 0810                                   |
+| Year       | 26                                     |
+| Type       | Feature                                |
+| Status     | ✅ Implemented                         |
+| Scope      | Admin bulk user onboarding + account claim + invitation mgmt |
+
+#### Summary
+Implemented complete admin-driven bulk user onboarding system with secure account claiming, invitation management, and onboarding state tracking. Admins can bulk-import users via CSV, generate secure claim tokens, resend/revoke invitations, and monitor user onboarding progress. New users access the system via claim links that set their password without plaintext storage.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | backend/controllers/adminOnboardController.js |
+| Created  | backend/routes/adminRoutes.js |
+| Created  | backend/routes/accountClaimRoutes.js |
+| Created  | backend/tests/adminOnboardController.test.js |
+| Modified | backend/app.js |
+| Modified | backend/package.json |
+| Modified | backend/prisma/schema.prisma |
+
+#### Database Models
+Database schema already included models for this feature:
+- UserInvitation: stores invitation state, token hash, expiration, claim status
+- AdminImportBatch: tracks CSV import batches and associated invitations
+- AdminImportRow: records validation state for each CSV row
+- User model extended: onboardingStatus, onboardingCompletedAt fields
+
+#### API Endpoints
+
+| Method | Route | Protected | Purpose |
+| ------ | ----- | --------- | ------- |
+| POST | /api/v1/admin/onboarding/import/validate | Yes (admin) | Validate CSV before import |
+| POST | /api/v1/admin/onboarding/import | Yes (admin) | Create users and send invitations |
+| GET | /api/v1/admin/invitations | Yes (admin) | List pending/claimed invitations |
+| POST | /api/v1/admin/invitations/:id/resend | Yes (admin) | Resend invitation email |
+| POST | /api/v1/admin/invitations/:id/revoke | Yes (admin) | Revoke invitation |
+| GET | /api/v1/account/claim/validate | No | Validate claim token |
+| POST | /api/v1/account/claim | No | Claim account and set password |
+| POST | /api/v1/account/onboarding/complete | Yes (logged-in) | Mark onboarding complete |
+
+#### Key Features
+- CSV import with full validation (email format, duplicates, existing users, invalid roles)
+- Secure random token generation (32-byte) with SHA256 hashing (no plaintext storage)
+- 7-day configurable token expiration
+- Email delivery via existing application mail service
+- One-time-use token invalidation after successful claim
+- Transaction-based batch processing for consistency
+- Comprehensive audit logging of admin actions
+- Invitation status tracking (PENDING, CLAIMED, REVOKED, EXPIRED)
+- Role-based access control (admin-only for bulk operations)
+- Support for tenant, landlord, provider roles (extensible)
+
+#### Dependencies Added
+- csv-parse@^5.5.6 (CSV parsing)
+- uuid@^9.0.1 (temp password generation)
+- multer@^1.4.5-lts.1 (file upload handling)
+
+#### Security
+- Tokens hashed before storage (not plaintext)
+- Password minimum 8 characters, hashed with bcryptjs
+- Admin authorization enforced on all administrative endpoints
+- Audit trail for all admin actions (create, resend, revoke)
+- Token expiration prevents indefinite claim windows
+- One-claim-only design prevents token reuse
+
+#### Testing
+- Unit tests for CSV validation (valid/invalid rows, duplicates, email format)
+- Tests for claim token validation (invalid, expired, already claimed)
+- Tests for password requirements (mismatch, too short)
+- Authorization tests (admin-only access)
+
+#### Remaining Work
+- Frontend: Admin dashboard pages for bulk import UI
+- Frontend: Account claim flow page (/claim-account)
+- Frontend: Onboarding walkthrough (role-specific)
+- Frontend: User detail/regulatory view (listings, requests, activity)
+- Frontend: Integration tests
+
+#### Notes
+- Existing infrastructure reused: auth (JWT), email (Gmail), audit logs, role system
+- No new email provider introduced; uses existing configuration
+- Deployment requires DATABASE_URL for Prisma connection
+- CSV format: firstName, lastName, email, role, phoneNumber (all except phoneNumber required)
+
+## 0811
+
+### 1015
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | admin-users-legal-docs-1015            |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Implemented                         |
+| Scope      | Backend: Admin Users API + Admin Legal Documents API
+
+#### Summary
+
+- Root cause: Frontend admin dashboard calls `/api/v1/admin/users` and `/api/v1/admin/legal-docs` but the backend had not exposed those admin routes, causing 404s.
+- Fix: Implemented secure admin user list/detail endpoints and wired existing legal document controller into the admin router so the admin dashboard can manage legal documents (list, history, create, update, archive).
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Created  | backend/controllers/adminUserController.js |
+| Modified | backend/routes/adminRoutes.js (added admin/users and admin/legal-docs routes) |
+| Reused   | backend/controllers/legalDocController.js (exposed via admin routes) |
+
+#### Database
+No schema migrations required. Existing LegalDocument and User models were reused.
+
+#### Frontend
+Frontend already uses `frontend/src/redux/api/adminApiSlice.ts` expecting these endpoints; no frontend changes required.
+
+#### Endpoints Implemented (all protected by protect + requireRole("admin"))
+
+**Admin Users**
+- GET  /api/v1/admin/users?page=1&limit=20&search=&role=&onboardingStatus=
+  - Returns paginated user list with safe fields (no passwords/tokens)
+  - Supports search by username/email, filtering by role and onboarding status
+  - Response: `{ status: "success", total, results, data: [] }`
+- GET  /api/v1/admin/users/:id
+  - Returns user detail with related resource counts (listings, payments, etc.)
+  - Response: `{ status: "success", data: { id, _id, username, email, role, providerProfile, onboardingStatus, createdAt, updatedAt, _count } }`
+
+**Admin Legal Documents**
+- GET  /api/v1/admin/legal-docs
+- GET  /api/v1/admin/legal-docs/:slug/history
+- POST /api/v1/admin/legal-docs
+- PUT  /api/v1/admin/legal-docs/:id
+- DELETE /api/v1/admin/legal-docs/:id
+
+#### Observations
+
+Frontend Admin Dashboard only calls:
+- `useGetAdminUsersQuery()` — read-only display
+- Invitations management — already implemented
+
+**No user mutations observed in UI.** The admin dashboard displays users in read-only tables and manages invitations (resend/revoke via existing endpoints). Following the project instruction "Do not invent operations merely to make the API look complete. The backend must be the source of truth," user mutations (create, update, suspend, etc.) were not implemented because they are not called by the UI.
+
+#### Security & Auditing
+- All admin routes protected by existing middleware (protect + requireRole("admin"))
+- Responses explicitly select safe fields; passwords, tokens, OTPs never returned
+- Admin view actions write audit entries via existing auditLog utility (non-blocking)
+
+#### Testing / Validation
+- Ran backend unit tests: 143 passed, 4 failed (due to missing postgres:5432 in test environment, unrelated to these changes)
+- Contract alignment: existing adminApiSlice endpoints match new backend routes
+- Public legal-docs endpoint (`/api/v1/legal-docs/:slug`) remains unchanged; only `isActive=true` documents exposed to public
+
+#### Remaining Work
+- If future UI calls warrant: admin user mutations (create, update, suspend, activate roles, resend invitations)
+- Run full CI/build with DATABASE_URL set and e2e tests to validate audit/logging integration
+
+#### Notes
+- No fixtures or mocks were created; existing business logic in adminUserController explicitly selects safe fields
+- Existing infrastructure reused: auth (JWT, requireRole), audit logging, role system, LegalDocument model/lifecycle
+- Deployment: no changes to .env or configuration needed
+
+#### Git
+Commit will include Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+#### Git
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | d6a4d9f            |
+| Generated From | git diff + git log |
+
+## 0809
+
+### 1522
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1522                                   |
+| Date       | 0809                                   |
+| Year       | 26                                     |
+| Type       | Seed                                   |
+| Status     | ✅ Focused Verified                     |
+| Scope      | Backend seed: temporary stays          |
+
+#### Summary
+Seeded 100 temporary-stay rooms (distributed across existing demo provider accounts) for demo/staging use. The process is idempotent and uses existing demo providers; rooms are attached to accommodations and include realistic variations (types, prices, amenities, images, availability blocks).
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/seed/seed.js                    |
+
+#### Repository Validation
+
+| Check                  | Result |
+| ---------------------- | ------ |
+| Idempotent seed        | ✅      |
+| Rooms present (total)  | 100    |
+| Distribution per demo provider | 20 each |
+| Local/API verification | Performed (seed script output) |
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging           |
+| Commit(s)      | b23b9e9            |
+| Generated From | git diff + git log |
+
+## 0808
+
+### 1214
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | 1214                                   |
+| Date       | 0808                                   |
+| Year       | 26                                     |
+| Type       | Fix                                    |
+| Status     | ✅ Focused Verified                     |
+| Validation | Focused passed; unit tests passed      |
+| Scope      | Backend authorization middleware       |
+
+#### Summary
+Fixed authorization middleware so 'super_admin' users are granted access to routes that require 'admin' privileges (e.g., /api/v1/providers, /api/v1/bookings) without weakening role checks.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | backend/controllers/authController.js   |
+| Modified | docs/CHANGELOG.md                       |
+
+#### Detailed Changes
+
+| Category | Description |
+| -------- | ----------- |
+| Auth     | requireRole now treats 'admin' as inclusive of 'super_admin' so super-admin accounts retain admin access. |
+| Security | No endpoints made public; checks remain role-based. |
+
+#### Repository Validation
+
+| Check                  | Result |
+| ---------------------- | ------ |
+| Backend unit tests     | ✅      |
+| E2E (production target)| ❌ blocked by SKIP_EMAIL_VERIFICATION not set on target; ran against production and reproduced issue prior to fix |
+| Compose config         | N/A    |
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | main               |
+| Commit(s)      | 52bb238            |
+| Generated From | git diff + git log |
+
+
 ## 0608
 
 ### 2037
@@ -806,3 +1285,61 @@ Aligned the auth, listing, payment, engagement, and notification flows with the 
 | Branch         | awsfullmig         |
 | Commit(s)      | c185179            |
 | Generated From | git diff + git log |
+
+## 0811
+
+### 0900
+
+| Field      | Value                                  |
+| ---------- | -------------------------------------- |
+| Author     | Tea                                    |
+| Identifier | provider-onboarding-0900               |
+| Date       | 0811                                   |
+| Year       | 26                                     |
+| Type       | Feature                                |
+| Status     | ✅ Implemented                         |
+| Scope      | Frontend: Provider onboarding, listing wizard hints, contextual help and guided tour
+
+#### Summary
+
+- Added a role-aware provider onboarding tour accessible from the Provider Dashboard. The tour highlights dashboard elements and explains what to do next.
+- Introduced contextual, inline hints across the listing creation wizard (Basic information, Rooms, Images, Pricing, Policies, Review). Hints explain required vs optional fields, provide short examples, and show why fields matter for publication.
+- Implemented a small non-opinionated guided tour component (no external deps) that anchors to elements via data attributes. The tour is UI-state-isolated and does not trigger autosave or remounts.
+- Reused existing onboarding persistence: completion is sent to POST /api/v1/account/onboarding/complete so server-side onboardingStatus is updated.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/views/Dashboard/provider/ProviderDashboardShell.tsx |
+| Created  | frontend/src/views/Dashboard/provider/wizard/ProviderTourDialog.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/AccommodationStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/RoomsStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ImagesStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/PricingStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/PoliciesStep.tsx |
+| Modified | frontend/src/views/Dashboard/provider/wizard/steps/ReviewStep.tsx |
+| Modified | frontend/src/views/Listing/components/allListings.tsx |
+| Modified | frontend/src/redux/api/adminApiSlice.ts |
+| Modified | docs/CHANGELOG.md |
+
+#### Accessibility
+
+- Tour supports keyboard navigation (Arrow keys, Escape), focusable controls, readable text and high-contrast highlights.
+
+#### Tests / Validation
+
+- Manual verification: First-time provider flow — dashboard tour -> create listing wizard hints -> save draft -> publish flow.
+- Verified that hints are UI-state-isolated (do not trigger autosave or form remounts) and use existing autosave endpoints only for persistence.
+
+#### Git
+
+| Field          | Value              |
+| -------------- | ------------------ |
+| Branch         | stagging |
+| Commit(s)      | f45bd46 |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+

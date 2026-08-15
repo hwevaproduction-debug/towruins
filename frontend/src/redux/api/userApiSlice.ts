@@ -19,13 +19,13 @@ export const userApiSlice = apiSlice.injectEndpoints({
       },
     }),
     update: builder.mutation({
-      query: (data) => {
-        return {
-          url: `users/update/${data.id}`,
-          method: "PUT",
-          body: data,
-        };
-      },
+      query: ({ id, payload }) => ({
+        url: `users/update/${id}`,
+        method: "PUT",
+        body: {
+          payload,
+        },
+      }),
     }),
     delete: builder.mutation({
       query: (data) => {

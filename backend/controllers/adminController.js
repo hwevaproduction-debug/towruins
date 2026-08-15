@@ -1739,3 +1739,243 @@ exports.settleBooking = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// -----------------------------
+// Admin Temporary Stay (Room) CRUD
+// -----------------------------
+
+exports.getTemporaryStays = catchAsync(async (req, res, next) => {
+  const { page, limit, skip } = buildPagination(req.query);
+  const where = {};
+
+  if (req.query.provider) {
+    where.providerId = String(req.query.provider).trim();
+  }
+
+  if (req.query.status) {
+    where.status = normalizeEnumValue(req.query.status);
+  }
+
+  if (req.query.search) {
+    const search = String(req.query.search).trim();
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const total = await prisma.room.count({ where });
+  const rooms = await prisma.room.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: {
+      provider: { select: { id: true, username: true, email: true, providerProfile: true } },
+      accommodation: { select: { id: true, name: true, isPublished: true, ownerId: true, province: true, city: true, lat: true, lng: true } },
+      images: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+
+  res.status(200).json({
+    status: "success",
+    total,
+    results: rooms.length,
+    data: rooms.map((room) => ({
+      ...room,
+      _id: room.id,
+      provider: room.provider ? { id: room.provider.id, username: room.provider.username, email: room.provider.email } : null,
+      accommodation: room.accommodation ? { id: room.accommodation.id, name: room.accommodation.name, isPublished: room.accommodation.isPublished } : null,
+      coverImage: room.images && room.images.length ? room.images[0].url : null,
+    })),
+    pagination: { page, limit, total, hasMore: total > skip + rooms.length },
+  });
+});
+
+exports.getTemporaryStayById = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({
+    where: { id: req.params.id },
+    include: {
+      provider: { select: { id: true, username: true, email: true, providerProfile: true } },
+      accommodation: {
+        include: {
+          owner: { select: { id: true, username: true, email: true } },
+          cancellationPolicy: true,
+          checkInOutRules: true,
+        },
+      },
+      images: { orderBy: { sortOrder: "asc" } },
+      amenities: { include: { amenity: true } },
+      seasonalRates: true,
+      availabilityBlocks: true,
+      fees: true,
+    },
+  });
+
+  if (!room) {
+    return next(new AppError("Temporary stay (room) not found", 404));
+  }
+
+  res.status(200).json({ status: "success", data: { room: { ...room, _id: room.id } } });
+});
+
+exports.createTemporaryStay = catchAsync(async (req, res, next) => {
+  const body = req.body || {};
+  const providerId = body.providerId || body.ownerId || null;
+
+  if (!providerId) return next(new AppError("providerId is required", 400));
+
+  const provider = await prisma.user.findUnique({ where: { id: providerId } });
+  if (!provider) return next(new AppError("Provider not found", 404));
+
+  // Optional accommodation attach
+  let accommodationId = body.accommodationId || null;
+  if (accommodationId) {
+    const accommodation = await prisma.accommodation.findUnique({ where: { id: accommodationId } });
+    if (!accommodation) return next(new AppError("Accommodation not found", 404));
+  }
+
+  // Validate required fields
+  const name = requireText(body.name, "name", next);
+  if (!name) return;
+
+  const basePricePerNight = parseFloat(body.basePricePerNight);
+  if (!Number.isFinite(basePricePerNight)) return next(new AppError("basePricePerNight is required and must be a number", 400));
+
+  const created = await prisma.$transaction(async (tx) => {
+    const room = await tx.room.create({
+      data: {
+        providerId: providerId,
+        accommodationId: accommodationId || null,
+        name,
+        description: body.description || "",
+        roomType: body.roomType ? normalizeEnumValue(body.roomType) : null,
+        capacity: body.capacity ? Number(body.capacity) : null,
+        basePricePerNight: basePricePerNight,
+        bookingMode: body.bookingMode ? normalizeEnumValue(body.bookingMode) : undefined,
+        minNights: body.minNights ? Number(body.minNights) : undefined,
+        maxNights: body.maxNights ? Number(body.maxNights) : undefined,
+      },
+    });
+
+    if (Array.isArray(body.images) && body.images.length) {
+      const images = body.images.map((url, idx) => ({ roomId: room.id, url: String(url), sortOrder: idx }));
+      await tx.roomImage.createMany({ data: images });
+    }
+
+    return room;
+  });
+
+  auditAdminAction(req, "temporary_stay.created", "Room", created.id, { name: created.name, providerId });
+
+  res.status(201).json({ status: "success", data: { room: { ...created, _id: created.id } } });
+});
+
+exports.updateTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  const body = req.body || {};
+
+  const updateData = {};
+  if (body.name != null) updateData.name = String(body.name);
+  if (body.description != null) updateData.description = String(body.description);
+  if (body.capacity != null) updateData.capacity = Number(body.capacity);
+  if (body.basePricePerNight != null) updateData.basePricePerNight = Number(body.basePricePerNight);
+  if (body.roomType != null) updateData.roomType = normalizeEnumValue(body.roomType);
+  if (body.bookingMode != null) updateData.bookingMode = normalizeEnumValue(body.bookingMode);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedRoom = await tx.room.update({ where: { id: room.id }, data: updateData });
+
+    if (Array.isArray(body.images)) {
+      // simple replace strategy: delete existing and create new
+      await tx.roomImage.deleteMany({ where: { roomId: room.id } });
+      const images = body.images.map((url, idx) => ({ roomId: room.id, url: String(url), sortOrder: idx }));
+      if (images.length) await tx.roomImage.createMany({ data: images });
+    }
+
+    return updatedRoom;
+  });
+
+  auditAdminAction(req, "temporary_stay.updated", "Room", updated.id, { changes: updateData });
+
+  res.status(200).json({ status: "success", data: { room: { ...updated, _id: updated.id } } });
+});
+
+exports.deleteTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  // Check for active bookings
+  const activeBookings = await prisma.booking.count({ where: { roomId: room.id, status: { in: ["CONFIRMED", "PENDING_CONFIRMATION", "PENDING_PAYMENT"] } } });
+  if (activeBookings > 0) {
+    return next(new AppError("Cannot delete: room has active bookings", 400));
+  }
+
+  const deleted = await prisma.room.update({ where: { id: room.id }, data: { deletedAt: new Date() } });
+  auditAdminAction(req, "temporary_stay.deleted", "Room", room.id);
+
+  res.status(200).json({ status: "success", data: { deletedId: room.id } });
+});
+
+exports.restoreTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  if (!room.deletedAt) return next(new AppError("Room is not archived", 400));
+
+  const restored = await prisma.room.update({ where: { id: room.id }, data: { deletedAt: null } });
+  auditAdminAction(req, "temporary_stay.restored", "Room", room.id);
+
+  res.status(200).json({ status: "success", data: { room: { ...restored, _id: restored.id } } });
+});
+
+exports.publishTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id }, include: { images: true, accommodation: true } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  const reasons = [];
+  if (!room.images || room.images.length === 0) reasons.push("Missing: Required image");
+  if (!room.accommodation || !room.accommodation.isPublished) reasons.push("Cannot publish: accommodation is not published");
+
+  if (reasons.length) {
+    return next(new AppError(`Cannot publish:\n- ${reasons.join("\n- ")}`, 400));
+  }
+
+  const updated = await prisma.room.update({ where: { id: room.id }, data: { status: "AVAILABLE" } });
+  auditAdminAction(req, "temporary_stay.published", "Room", room.id);
+
+  res.status(200).json({ status: "success", data: { room: { ...updated, _id: updated.id } } });
+});
+
+exports.unpublishTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  const updated = await prisma.room.update({ where: { id: room.id }, data: { status: "UNAVAILABLE" } });
+  auditAdminAction(req, "temporary_stay.unpublished", "Room", room.id);
+
+  res.status(200).json({ status: "success", data: { room: { ...updated, _id: updated.id } } });
+});
+
+exports.suspendTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  const reason = req.body.reason ? String(req.body.reason) : null;
+  const updated = await prisma.room.update({ where: { id: room.id }, data: { status: "MAINTENANCE" } });
+  auditAdminAction(req, "temporary_stay.suspended", "Room", room.id, reason ? { reason } : null);
+
+  res.status(200).json({ status: "success", data: { room: { ...updated, _id: updated.id } } });
+});
+
+exports.reinstateTemporaryStay = catchAsync(async (req, res, next) => {
+  const room = await prisma.room.findUnique({ where: { id: req.params.id } });
+  if (!room) return next(new AppError("Room not found", 404));
+
+  const updated = await prisma.room.update({ where: { id: room.id }, data: { status: "AVAILABLE" } });
+  auditAdminAction(req, "temporary_stay.reinstated", "Room", room.id);
+
+  res.status(200).json({ status: "success", data: { room: { ...updated, _id: updated.id } } });
+});

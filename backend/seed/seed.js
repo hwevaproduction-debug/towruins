@@ -7,7 +7,7 @@ require('dotenv').config({
 const API_BASE = (
   process.env.SEED_API_BASE ||
   process.env.API_BASE ||
-  `https://alvinphiri-patch-1.d3499gwn793u06.amplifyapp.com`
+  `https://api.townruins.com`
 ).replace(/\/+$/, '');
 const SEED_API_KEY = process.env.SEED_API_KEY || 'debug123';
 const TARGET_LISTING_COUNT = 100;
@@ -705,16 +705,69 @@ async function ensureProvider(providerData, adminToken) {
   };
 }
 
+async function ensureAccommodation(providerIndex, providerToken) {
+  // Check if provider already has an accommodation
+  const mineResp = await request('GET', '/api/v1/accommodations/mine', null, providerToken).catch(() => null);
+  const existing = mineResp?.data?.accommodation || null;
+  if (existing) {
+    return { accommodation: existing, created: false };
+  }
+
+  const provider = PROVIDERS[providerIndex] || {};
+  const profile = provider.providerProfile || {};
+
+  const typeMap = {
+    hotel: 'HOTEL',
+    lodge: 'LODGE',
+    bnb: 'BNB',
+    apartment: 'APARTMENT',
+    'guesthouse': 'GUEST_HOUSE',
+    'guest-house': 'GUEST_HOUSE',
+    inn: 'HOSTEL',
+  };
+
+  const payload = {
+    name: profile.businessName || provider.username || `Provider ${providerIndex + 1}`,
+    type: typeMap[(profile.businessType || '').toString().toLowerCase()] || 'HOTEL',
+    contactPhone: profile.contactPhone || DEMO_PHONE,
+    province: (profile.location && profile.location.province) || 'Harare',
+    city: (profile.location && profile.location.city) || 'Unknown',
+    addressLine: (profile.location && profile.location.addressLine) || `${profile.businessName || provider.username || 'Address'} Main Road`,
+    description: profile.description || `Accommodation for ${profile.businessName || provider.username}`,
+    isPublished: true,
+  };
+
+  // Ensure required fields are present
+  try {
+    const created = await request('POST', '/api/v1/accommodations', payload, providerToken);
+    return { accommodation: created?.data?.accommodation || null, created: true };
+  } catch (error) {
+    // If accommodation creation fails because it already exists, try to fetch list via admin later
+    console.warn(`  Warning: accommodation creation failed for provider ${provider.email}: ${error.message}`);
+    return { accommodation: null, created: false };
+  }
+}
+
 function buildRooms(providerIndex) {
   return ROOM_MATRIX[providerIndex]
     ? ROOM_MATRIX[providerIndex].map((room) => ({ ...room }))
     : [];
 }
 
-async function ensureRooms(providerIndex, providerToken) {
+async function ensureRooms(providerIndex, providerToken, desiredCount = null, accommodationId = null) {
   const mineResponse = await request('GET', '/api/v1/rooms/mine', null, providerToken);
   const existingRooms = mineResponse?.data?.rooms || [];
-  if (existingRooms.length > 0) {
+
+  // If no desiredCount provided, preserve previous behaviour: if any rooms exist, return them.
+  if (desiredCount == null && existingRooms.length > 0) {
+    return {
+      rooms: existingRooms,
+      created: 0,
+    };
+  }
+
+  // If desiredCount provided and already satisfied, return existing rooms.
+  if (desiredCount != null && existingRooms.length >= desiredCount) {
     return {
       rooms: existingRooms,
       created: 0,
@@ -722,13 +775,73 @@ async function ensureRooms(providerIndex, providerToken) {
   }
 
   const rooms = [];
-  for (const room of buildRooms(providerIndex)) {
-    const response = await request('POST', '/api/v1/rooms', room, providerToken);
-    rooms.push(response?.data?.room);
+
+  const templates = buildRooms(providerIndex);
+  const templateLen = Math.max(templates.length, 1);
+
+  // If templates exist, create from them first, otherwise create simple defaults.
+  const startIndex = existingRooms.length;
+  const targetCount = desiredCount != null ? desiredCount : templates.length;
+  const toCreate = Math.max(0, targetCount - existingRooms.length);
+
+  for (let i = 0; i < toCreate; i += 1) {
+    const template = templates[i % templateLen] || {
+      name: `Room ${i + 1}`,
+      description: 'Comfortable short-stay room',
+      roomType: 'DOUBLE',
+      basePricePerNight: 50,
+      capacity: 2,
+      amenities: { wifi: true },
+      imageUrls: [IMAGES[(startIndex + i) % IMAGES.length]],
+      status: 'available',
+      bookingMode: 'instant',
+      cancellationPolicy: 'flexible',
+    };
+
+    // Make deterministic variations so records aren't identical
+    const variationIndex = startIndex + i + 1;
+    const rt = (template.roomType || '').toString().toLowerCase();
+    const roomTypeMap = {
+      single: 'SINGLE',
+      double: 'DOUBLE',
+      standard: 'DOUBLE',
+      twin: 'TWIN',
+      suite: 'SUITE',
+      deluxe: 'SUITE',
+      family: 'ENTIRE_UNIT',
+      entire: 'ENTIRE_UNIT',
+      'entire_unit': 'ENTIRE_UNIT',
+      dormitory: 'DORMITORY',
+      studio: 'STUDIO',
+    };
+    const normalizedRoomType = roomTypeMap[rt] || 'ENTIRE_UNIT';
+
+    const payload = {
+      ...template,
+      name: `${template.name} #${variationIndex}`,
+      roomType: normalizedRoomType,
+      basePricePerNight:
+        (typeof template.basePricePerNight === 'number'
+          ? template.basePricePerNight
+          : Number(template.basePricePerNight) || 50) + (variationIndex % 7) * 5,
+      capacity: template.capacity || 2,
+      imageUrls: template.imageUrls || [IMAGES[(startIndex + i) % IMAGES.length]],
+      accommodationId: accommodationId || undefined,
+    };
+
+    let response;
+    try {
+      response = await request('POST', '/api/v1/rooms', payload, providerToken);
+      rooms.push(response?.data?.room);
+    } catch (error) {
+      console.error('\nFailed creating room payload:', JSON.stringify(payload));
+      console.error('API error status/payload:', error.status, JSON.stringify(error.payload || error.message));
+      throw error;
+    }
   }
 
   return {
-    rooms,
+    rooms: existingRooms.concat(rooms),
     created: rooms.length,
   };
 }
@@ -764,13 +877,17 @@ async function ensureBookings(providerRooms, guestToken, providerTokens) {
         created += 1;
 
         if (index < 2 && bookingIndex === 0) {
-          await request(
-            'POST',
-            `/api/v1/bookings/${response?.data?.booking?._id}/confirm`,
-            {},
-            providerTokens[index]
-          );
-          confirmed += 1;
+          try {
+            await request(
+              'POST',
+              `/api/v1/bookings/${response?.data?.booking?._id}/confirm`,
+              {},
+              providerTokens[index]
+            );
+            confirmed += 1;
+          } catch (err) {
+            console.warn(`  Warning: could not confirm booking ${response?.data?.booking?._id}: ${err?.payload?.message || err.message}`);
+          }
         }
       } catch (error) {
         if (error.status === 409) {
@@ -1042,17 +1159,59 @@ async function seed() {
   }
   const approvedProviders = providerResults.length;
 
+  // Distribute TARGET_LISTING_COUNT temporary-stay rooms across approved demo providers.
   const allProviderRooms = [];
+  const providerCount = providerResults.length;
+  const basePerProvider = Math.floor(TARGET_LISTING_COUNT / providerCount);
+  let remainder = TARGET_LISTING_COUNT % providerCount;
+
   for (let index = 0; index < providerResults.length; index += 1) {
-    const roomResult = await ensureRooms(index, providerResults[index].token);
+    const desired = basePerProvider + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+
+    // Ensure provider has an accommodation to attach rooms to
+    const accResult = await ensureAccommodation(index, providerResults[index].token);
+    const accommodationId = accResult?.accommodation?._id || accResult?.accommodation?.id || null;
+
+    const roomResult = await ensureRooms(index, providerResults[index].token, desired, accommodationId);
     createdRooms += roomResult.created;
     allProviderRooms.push({
       providerId: providerResults[index].providerId,
+      accommodationId,
       rooms: roomResult.rooms,
     });
   }
 
+  // Summarize rooms per provider after seeding (useful for verification)
   const providerTokens = providerResults.map((providerResult) => providerResult.token);
+
+  const distribution = allProviderRooms.map((entry, idx) => {
+    const statusCounts = (entry.rooms || []).reduce((acc, r) => {
+      const s = r?.status || 'UNKNOWN';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      providerId: entry.providerId,
+      providerEmail: PROVIDERS[idx]?.email || '(unknown)',
+      roomsSeeded: entry.rooms.length,
+      statusCounts,
+      accommodationId: entry.accommodationId || null,
+    };
+  });
+
+  console.log('\nTemporary-stay distribution across demo providers:');
+  distribution.forEach((d) =>
+    console.log(
+      `  ${d.providerEmail} (${d.providerId}) - accommodation:${d.accommodationId || '(none)'}: ${d.roomsSeeded} rooms`,
+      JSON.stringify(d.statusCounts)
+    )
+  );
+
+  const totalSeededRooms = distribution.reduce((s, d) => s + d.roomsSeeded, 0);
+  console.log(`  Total temporary-stay rooms present: ${totalSeededRooms}`);
+
   const bookingCounts = await ensureBookings(
     allProviderRooms,
     premiumTenant.token,

@@ -1068,7 +1068,12 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 exports.requireRole = (role) => {
   return (req, res, next) => {
-    const allowedRoles = Array.isArray(role) ? role : [role];
+    const allowedRoles = Array.isArray(role) ? [...role] : [role];
+
+    // Treat 'admin' as inclusive of 'super_admin'
+    if (allowedRoles.includes("admin") && !allowedRoles.includes("super_admin")) {
+      allowedRoles.push("super_admin");
+    }
 
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new AppError("Access denied", 403));

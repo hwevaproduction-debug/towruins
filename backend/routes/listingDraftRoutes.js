@@ -10,26 +10,39 @@ const {
 const router = express.Router();
 
 router.use(authController.protect);
-router.use(authController.requireRole("landlord"));
 
 router.post(
   "/",
   ...createListingDraftValidators,
   validate,
+  authController.requireRole("landlord"),
   listingDraftController.createListingDraft
 );
 
-router.get("/mine", listingDraftController.getMyListingDrafts);
-router.get("/:id", listingDraftController.getListingDraft);
+router.get(
+  "/mine",
+  authController.requireRole(["landlord", "provider"]),
+  listingDraftController.getMyListingDrafts
+);
+router.get(
+  "/:id",
+  authController.requireRole("landlord"),
+  listingDraftController.getListingDraft
+);
 
 router.put(
   "/:id",
   ...updateListingDraftValidators,
   validate,
+  authController.requireRole("landlord"),
   listingDraftController.updateListingDraft
 );
 
-router.delete("/:id", listingDraftController.deleteListingDraft);
+router.delete(
+  "/:id",
+  authController.requireRole("landlord"),
+  listingDraftController.deleteListingDraft
+);
 
 module.exports = router;
 

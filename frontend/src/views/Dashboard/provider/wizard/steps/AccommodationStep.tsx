@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Grid, MenuItem, Stack, TextField } from "@mui/material";
-import { toEntityObject, useGetMyAccommodationQuery, useUpdateAccommodationMutation } from "../../../../../redux/api/providerApiSlice";
+import { Button, Grid, MenuItem, Stack, TextField, Box, Typography, Chip, Tooltip } from "@mui/material";
+import { toEntityObject, useGetMyAccommodationQuery, useCreateAccommodationMutation, useUpdateAccommodationMutation } from "../../../../../redux/api/providerApiSlice";
 
 type AccommodationStepProps = {
   accommodationId: string;
@@ -12,7 +12,9 @@ type AccommodationStepProps = {
 const AccommodationStep = ({ accommodationId, onNext, initialValues = {}, onDataChange }: AccommodationStepProps) => {
   const { data } = useGetMyAccommodationQuery(undefined);
   const accommodation = toEntityObject(data, ["accommodation"]);
-  const [updateAccommodation, { isLoading }] = useUpdateAccommodationMutation();
+  const [createAccommodation, { isLoading: isCreating }] = useCreateAccommodationMutation();
+  const [updateAccommodation, { isLoading: isUpdating }] = useUpdateAccommodationMutation();
+  const isLoading = isCreating || isUpdating;
   const [form, setForm] = useState({ name: "", type: "HOTEL", description: "", province: "", city: "", addressLine: "", contactPhone: "", timezone: "Africa/Harare", ...initialValues });
   const hydratedForm = useRef(false);
 
@@ -39,6 +41,12 @@ const AccommodationStep = ({ accommodationId, onNext, initialValues = {}, onData
 
   return (
     <Stack spacing={2}>
+      <Box>
+        <Typography variant="h6">Basic information</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Give your listing a clear name and description. This is what visitors will see first. Fields marked <Chip size="small" label="Required" sx={{ ml: 1 }} /> are required before publishing.
+        </Typography>
+      </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} md={8}><TextField fullWidth label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth select label="Type" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>{["HOTEL", "LODGE", "BNB", "APARTMENT", "GUEST_HOUSE", "HOSTEL"].map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}</TextField></Grid>
@@ -49,7 +57,23 @@ const AccommodationStep = ({ accommodationId, onNext, initialValues = {}, onData
         <Grid item xs={12} md={8}><TextField fullWidth label="Address" value={form.addressLine} onChange={(event) => setForm({ ...form, addressLine: event.target.value })} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth label="Timezone" value={form.timezone} onChange={(event) => setForm({ ...form, timezone: event.target.value })} /></Grid>
       </Grid>
-      <Button variant="contained" disabled={isLoading} onClick={async () => { await updateAccommodation({ id: accommodationId, payload: form }).unwrap(); onNext(); }}>Next</Button>
+      <Button
+        variant="contained"
+        disabled={isLoading}
+        onClick={async () => {
+          if (!accommodationId) {
+            // Create new accommodation
+            await createAccommodation(form).unwrap();
+            onNext();
+            return;
+          }
+
+          await updateAccommodation({ id: accommodationId, payload: form }).unwrap();
+          onNext();
+        }}
+      >
+        Next
+      </Button>
     </Stack>
   );
 };

@@ -1,5 +1,6 @@
-import { Button, Grid, Paper, Stack, Typography } from "@mui/material";
+import { Button, Grid, Paper, Stack, Typography, Box } from "@mui/material";
 import { useUpdateAccommodationMutation } from "../../../../../redux/api/providerApiSlice";
+import { trackEvent } from "../../../../../utils/analytics";
 
 type ReviewStepProps = {
   accommodationId: string;
@@ -14,6 +15,25 @@ const ReviewStep = ({ accommodationId, accommodation, rooms, onPublish, onBack }
 
   return (
     <Stack spacing={2}>
+      {(() => {
+        const missing: string[] = [];
+        if (!accommodation?.name) missing.push("Listing title");
+        if (!rooms || rooms.length === 0) missing.push("Add at least one room");
+        const goToRooms = () => { for (let i = 0; i < 4; i++) onBack(); };
+        return missing.length ? (
+          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>You still need to complete:</Typography>
+            {missing.map((m) => (
+              <Box key={m} sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography>{'\u2022'}</Typography>
+                <Typography color="text.secondary">{m}</Typography>
+                {m.includes('room') ? <Button size="small" onClick={goToRooms} sx={{ ml: 'auto' }}>Edit Rooms</Button> : null}
+              </Box>
+            ))}
+          </Paper>
+        ) : null;
+      })()}
+
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Paper variant="outlined" sx={{ p: 2 }}>
@@ -31,12 +51,31 @@ const ReviewStep = ({ accommodationId, accommodation, rooms, onPublish, onBack }
           </Paper>
         </Grid>
       </Grid>
-      <Stack direction="row" spacing={1}>
-        <Button onClick={onBack}>Back</Button>
-        <Button variant="contained" disabled={isLoading} onClick={async () => { await updateAccommodation({ id: accommodationId, payload: { isPublished: true } }).unwrap(); onPublish(); }}>
-          {isLoading ? "Publishing..." : "Publish Listing"}
-        </Button>
-      </Stack>
+      {(() => {
+        const canPublish = rooms && rooms.length > 0;
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button onClick={onBack}>Back</Button>
+            <Button
+              variant="contained"
+              disabled={isLoading || !canPublish}
+              onClick={async () => {
+                if (!canPublish) return;
+                await updateAccommodation({ id: accommodationId, payload: { isPublished: true } }).unwrap();
+                              try { trackEvent("listing_tutorial_completed", { accommodationId }); } catch (e) {}
+                              onPublish();
+                            }}
+            >
+              {isLoading ? "Publishing..." : "Publish Listing"}
+            </Button>
+            {!canPublish && (
+              <Typography color="error" sx={{ alignSelf: 'center', ml: 1 }}>
+                Add at least one room before publishing this accommodation.
+              </Typography>
+            )}
+          </Stack>
+        );
+      })()}
     </Stack>
   );
 };
