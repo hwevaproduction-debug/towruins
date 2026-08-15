@@ -1,5 +1,51 @@
 # 26
+## 0814
 
+| Field      | Value                                                                                          |
+| ---------- | ---------------------------------------------------------- |
+| Author     | Tea                                                                                            |
+| Identifier | auth-invitation-user-update-fix-0440                                                           |
+| Date       | 0814                                                                                           |
+| Year       | 26                                                                                             |
+| Type       | Fix                                                                                            |
+| Status     | ✅ Implemented                                                                                  |
+| Scope      | Frontend: authentication state, user updates, admin invitations, and protected-route debugging |
+
+#### Summary
+
+* Root cause: The frontend expected inconsistent API response shapes for invitations and authentication state. The admin invitation endpoint now returns invitations nested under `data.invitations`, while login responses were being stored with an unnecessary outer response wrapper. User profile updates also used an incompatible request payload structure, and authenticated user ID resolution did not consistently handle the available auth state shapes.
+* Fix: Updated `listInvitations` typing and cache-tag generation to consume `data.invitations` safely, including support for optional pagination metadata. Updated the admin dashboard to render the nested invitation collection.
+* Fix: Updated the user profile mutation to accept `{ id, payload }` and send the payload through the expected request structure.
+* Fix: Standardized authenticated user ID selection through the shared `getAuthUserId` helper.
+* Fix: Updated login persistence to store `user.data` in Redux and localStorage, matching the expected authenticated user structure.
+* Debugging: Added temporary protected-route logging to expose the current path, authenticated user, resolved role, and allowed roles while diagnosing authentication and routing behavior.
+
+#### Files Changed
+
+| Action   | File                                    |
+| -------- | --------------------------------------- |
+| Modified | frontend/src/redux/api/adminApiSlice.ts |
+| Modified | frontend/src/redux/api/userApiSlice.ts  |
+| Modified | frontend/src/redux/auth/authSlice.ts    |
+| Modified | frontend/src/routes/ProtectedRoutes.tsx |
+| Modified | frontend/src/views/Dashboard/Admin.tsx  |
+| Modified | frontend/src/views/Login/index.tsx      |
+| Modified | docs/CHANGELOG.md                       |
+
+#### Build Validation
+
+Validated the updated frontend request/response handling and authentication state flow. The protected-route logging is intended as temporary diagnostic instrumentation and should be removed after authentication/routing verification is complete.
+
+#### Git
+
+| Field     | Value                        |
+| --------- | ---------------------------- |
+| Branch    | stagging                     |
+| Commit(s) | 1322 |
+
+#### Git Trailer
+
+Co-authored-by: Copilot
 ## 0811
 
 ### 0654
