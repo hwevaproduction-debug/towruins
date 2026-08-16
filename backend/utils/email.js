@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-const sendWithGmail = ({ from, to, subject, text, html }) => {
+const sendWithGmail = async ({ from, to, subject, text, html }) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -9,13 +9,35 @@ const sendWithGmail = ({ from, to, subject, text, html }) => {
     },
   });
 
-  return transporter.sendMail({
-    from,
-    to,
-    subject,
-    text,
-    html,
-  });
+  try {
+    const result = await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    console.log("[email:gmail] sent", {
+      to,
+      messageId: result.messageId,
+      accepted: result.accepted,
+      rejected: result.rejected,
+      response: result.response,
+    });
+
+    return result;
+  } catch (err) {
+    console.error("[email:gmail] FAILED", {
+      to,
+      code: err.code,
+      command: err.command,
+      response: err.response,
+      message: err.message,
+    });
+
+    throw err;
+  }
 };
 
 exports.buildBrandedEmail = ({ title, preheader = "", body, ctaText, ctaUrl }) => {
@@ -54,11 +76,34 @@ exports.sendEmail = async ({ to, subject, text, html }) => {
     return { mocked: true };
   }
 
-  return sendWithGmail({
-    from,
-    to,
-    subject,
-    text,
-    html,
-  });
+  try {
+    const result = await sendWithGmail({
+      from,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    console.log("[email:gmail]", {
+      to,
+      subject,
+      messageId: result.messageId,
+      response: result.response,
+      accepted: result.accepted,
+      rejected: result.rejected,
+    });
+
+    return result;
+  } catch (error) {
+    console.error("[email:gmail:error]", {
+      to,
+      subject,
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      responseCode: error.responseCode,
+    });
+    throw error;
+  }
 };

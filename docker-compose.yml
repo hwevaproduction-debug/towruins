@@ -58,6 +58,8 @@ services:
     restart: unless-stopped
 
   backend:
+    env_file:
+      - ./backend/.env
     build: ./backend
     depends_on:
       postgres:
