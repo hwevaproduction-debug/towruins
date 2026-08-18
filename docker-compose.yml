@@ -102,6 +102,8 @@ services:
 
   nginx:
     image: nginx:stable-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     entrypoint: ["nginx", "-g", "daemon off;"]
     depends_on:
       backend:

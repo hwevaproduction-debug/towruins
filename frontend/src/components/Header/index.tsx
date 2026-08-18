@@ -602,7 +602,9 @@ const Header = () => {
                     navigate("/dashboard/landlord");
                   } else if (userRole === "tenant") {
                     navigate("/dashboard/tenant");
-                  } else if (userRole === "admin") {
+                  } else if (userRole === "provider") {
+                    navigate("/dashboard/provider");
+                  } else if (userRole === "admin" || userRole === "super_admin") {
                     navigate("/dashboard/admin");
                   } else {
                     navigate("/");
