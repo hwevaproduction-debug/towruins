@@ -395,8 +395,10 @@ const getRoomSearchSelect = (includeSeasonalRates, checkIn, checkOut) => ({
       }
     : {}),
   images: {
-    where: { isCover: true },
-    orderBy: { sortOrder: "asc" },
+    orderBy: [
+      { isCover: "desc" },
+      { sortOrder: "asc" },
+    ],
     take: 1,
     select: {
       url: true,
