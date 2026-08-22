@@ -30,14 +30,25 @@ const getRoomDescription = (room: any) =>
   room?.description || room?.summary || room?.details || "No description available yet.";
 
 const getRoomImage = (room: any) => {
-  if (Array.isArray(room?.images) && room.images.length > 0) {
-    const firstImage = room.images[0];
-    return typeof firstImage === "string" ? firstImage : firstImage?.url || FALLBACK_IMAGE;
-  }
+  const resolveImage = (image: any) => {
+    if (typeof image === "string" && image.trim()) return image;
+    if (image?.url && typeof image.url === "string" && image.url.trim()) return image.url;
+    return null;
+  };
 
-  if (typeof room?.image === "string") return room.image;
-  if (typeof room?.coverImage === "string") return room.coverImage;
-  return FALLBACK_IMAGE;
+  const roomImages = Array.isArray(room?.images) ? room.images : [];
+  const accommodationImages = Array.isArray(room?.accommodation?.images)
+    ? room.accommodation.images
+    : [];
+
+  const image =
+    roomImages.map(resolveImage).find(Boolean) ||
+    resolveImage(room?.coverImage) ||
+    accommodationImages.map(resolveImage).find(Boolean) ||
+    resolveImage(room?.accommodation?.coverImage) ||
+    resolveImage(room?.image);
+
+  return image || FALLBACK_IMAGE;
 };
 
 const getRoomPrice = (room: any) =>
