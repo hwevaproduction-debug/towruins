@@ -1,4 +1,90 @@
 # 26
+## 0916
+
+### 1302
+
+| Field      | Value                                                                                          |
+| ---------- | ------------------------------------------------------ |
+| Author     | Tea                                                                                            |
+| Identifier | temporary-stay-image-viewer-1302                                                               |
+| Date       | 0916                                                                                           |
+| Year       | 26                                                                                             |
+| Type       | Feature                                                                                        |
+| Status     | ✅ Implemented                                                                                  |
+| Scope      | Frontend: Temporary Stays public view image gallery and lightbox viewer                        |
+
+#### Summary
+
+* Feature: Implement image viewer/lightbox for Temporary Stay public view by reusing the existing `ImageLightbox` component already used in normal Listings.
+* Implementation: Added lightbox state management (`lightboxOpen`, `lightboxIndex`) and click handlers to hero image and thumbnail grid in `RoomDetail.tsx`.
+* Interaction: Hero image opens lightbox at index 0; visible thumbnails open at correct index; full image array accessible via Previous/Next navigation.
+* Design: Preserved existing layout and styling; minimal changes to support lightbox (onClick handlers and cursor pointer).
+* Reuse: No new carousel/slider component created; existing `ImageLightbox` component reused directly.
+
+#### Files Changed
+
+| Action   | File                                                      |
+| -------- | --------------------------------------------------------- |
+| Modified | frontend/src/views/Stays/RoomDetail.tsx                   |
+
+#### Validation
+
+* Docker build: ✅ Passed (all TypeScript and build checks)
+* Frontend container: ✅ Healthy
+* Backend container: ✅ Healthy and running
+* Nginx routing: ✅ Operational
+* Code changes: ✅ Hero and thumbnail images clickable; lightbox accepts full images array
+
+#### Git
+
+| Field     | Value                        |
+| --------- | ---------------------------- |
+| Branch    | main                         |
+| Commit(s) | 8bc095e                      |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+### 0401
+
+| Field      | Value                                                                                          |
+| ---------- | ------------------------------------------------------ |
+| Author     | Tea                                                                                            |
+| Identifier | bulk-import-createValidOnly-fix-0401                                                           |
+| Date       | 0916                                                                                           |
+| Year       | 26                                                                                             |
+| Type       | Fix                                                                                            |
+| Status     | ✅ Implemented                                                                                  |
+| Scope      | Frontend: bulk import dialog TypeScript error fix                                              |
+
+#### Summary
+
+* Root cause: Previous change removed the unused state variable `createValidOnly` (initialized to true, never modified) but left the reference in `handleSubmit`, causing `TS2304: Cannot find name 'createValidOnly'` build error.
+* Fix: Removed conditional check and unconditionally append the flag to FormData. The original behavior always sent `createValidOnly=true` to the backend, reflecting the intended design (always create only valid rows, skipping invalid ones).
+* Code quality: Eliminated unused state setter and clarified comment to reflect unconditional behavior.
+
+#### Files Changed
+
+| Action   | File                                                      |
+| -------- | --------------------------------------------------------- |
+| Modified | frontend/src/views/Dashboard/components/BulkImportDialog.tsx |
+
+#### Build Validation
+
+Fix unblocks `TS2304: Cannot find name 'createValidOnly'` TypeScript error. Backend RTK mutation continues to receive correct FormData shape. Behavior identical to original implementation (flag always true).
+
+#### Git
+
+| Field     | Value                        |
+| --------- | ---------------------------- |
+| Branch    | main                         |
+| Commit(s) | a0970d4                      |
+
+#### Git Trailer
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
 ## 0814
 
 | Field      | Value                                                                                          |
