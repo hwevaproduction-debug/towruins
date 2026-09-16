@@ -19,6 +19,7 @@ import AppCard from "../../components/ui/AppCard";
 import AppInput from "../../components/ui/AppInput";
 import AppButton from "../../components/ui/AppButton";
 import DotLoader from "../../components/Spinner/dotLoader";
+import ImageLightbox from "../../components/ImageLightbox";
 import BookingCalendar from "../../components/stays/BookingCalendar";
 import CouponInput from "../../components/stays/CouponInput";
 import PriceBreakdown from "../../components/stays/PriceBreakdown";
@@ -210,6 +211,10 @@ const RoomDetail = () => {
     type: "success",
     message: "",
   });
+
+  // Image lightbox state (reused from Listings)
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: room, isLoading, error } = useGetStayByIdQuery(roomId, { skip: !roomId });
   const [createBooking, { isLoading: isBooking }] = useCreateBookingMutation();
@@ -521,24 +526,34 @@ const RoomDetail = () => {
                   component="img"
                   src={images[0]}
                   alt={getRoomName(room)}
-                  sx={{ width: "100%", height: { xs: 260, md: 420 }, objectFit: "cover" }}
+                  onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
+                  sx={{ width: "100%", height: { xs: 260, md: 420 }, objectFit: "cover", cursor: "pointer" }}
                 />
               </AppCard>
 
               <Grid container spacing={2}>
-                {images.slice(1, 4).map((image: string) => (
-                  <Grid item xs={12} sm={4} key={image}>
+                {images.slice(1, 4).map((image: string, idx: number) => (
+                  <Grid item xs={12} sm={4} key={`${image}-${idx}`}>
                     <AppCard sx={{ overflow: "hidden", borderRadius: "16px" }}>
                       <Box
                         component="img"
                         src={image}
                         alt={getRoomName(room)}
-                        sx={{ width: "100%", height: 150, objectFit: "cover" }}
+                        onClick={() => { setLightboxIndex(idx + 1); setLightboxOpen(true); }}
+                        sx={{ width: "100%", height: 150, objectFit: "cover", cursor: "pointer" }}
                       />
                     </AppCard>
                   </Grid>
                 ))}
               </Grid>
+
+              {/* ImageLightbox (reused from Listings) */}
+              <ImageLightbox
+                images={images}
+                initialIndex={lightboxIndex}
+                open={lightboxOpen}
+                onClose={() => setLightboxOpen(false)}
+              />
 
               <AppCard sx={{ p: { xs: 2.5, md: 3 }, borderRadius: 3 }}>
                 <Stack spacing={2.5}>
