@@ -21,7 +21,7 @@ export const providerSignUpSchema = Yup.object().shape({
   businessName: Yup.string().required("Business name is required").nullable(),
   businessType: Yup.string()
     .oneOf(
-      ["hotel", "lodge", "bnb", "guesthouse", "motel", "backpackers"],
+      ["HOTEL", "LODGE", "BNB", "GUEST_HOUSE", "APARTMENT", "HOSTEL"],
       "Select a valid business type"
     )
     .required("Business type is required"),

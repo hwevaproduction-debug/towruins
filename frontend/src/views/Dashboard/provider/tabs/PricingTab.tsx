@@ -126,7 +126,7 @@ const PricingTab = ({ rooms, accommodationId, initialValues = {}, onDataChange }
         appliesTo: taxRule.appliesTo || "SUBTOTAL",
       });
     }
-  }, [taxResponse]);
+  }, [initialValues.taxForm, taxResponse]);
 
   useEffect(() => {
     setOccupancyForm({ baseGuestCount: "", extraGuestFeePerNight: "" });

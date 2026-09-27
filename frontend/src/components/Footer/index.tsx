@@ -22,7 +22,7 @@ const groups = [
   {
     title: "Trust & Safety",
     links: [
-      { label: "Landlord Verification Policy", to: "/landlord-terms" },
+      { label: "Host & Landlord Agreement", to: "/landlord-terms" },
       { label: "Trust Center", to: "/trust-safety" },
     ],
   },

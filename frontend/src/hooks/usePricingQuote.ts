@@ -17,15 +17,7 @@ export const usePricingQuote = (params: PricingQuoteParams) => {
   useEffect(() => {
     const t = setTimeout(() => setDebouncedParams(params), 400);
     return () => clearTimeout(t);
-  }, [
-    params.roomId,
-    params.checkIn,
-    params.checkOut,
-    params.adultCount,
-    params.childCount,
-    params.infantCount,
-    params.couponCode,
-  ]);
+  }, [params]);
 
   const skip =
     !debouncedParams.checkIn || !debouncedParams.checkOut || !debouncedParams.roomId;
@@ -34,3 +26,7 @@ export const usePricingQuote = (params: PricingQuoteParams) => {
 
   return { quote, isLoading: isFetching, error };
 };
+
+
+
+

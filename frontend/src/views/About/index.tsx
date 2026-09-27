@@ -234,8 +234,8 @@ const About = () => {
           </Box>
           <Grid container spacing={2}>
             {[
-              { title: "Terms of Use", desc: "Rules governing use of the platform", path: "/terms" },
-              { title: "Privacy Policy", desc: "How we collect and protect your data", path: "/privacy" },
+              { title: "Terms of Use", desc: "Rules governing use of the platform", path: "/terms-of-use" },
+              { title: "Privacy Policy", desc: "How we collect and protect your data", path: "/privacy-policy" },
               { title: "Refund Policy", desc: "Cancellation and refund procedures", path: "/refund-policy" },
               { title: "Landlord Agreement", desc: "Terms for hosting on Town Ruins", path: "/landlord-terms" },
             ].map((doc) => (

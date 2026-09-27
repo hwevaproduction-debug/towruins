@@ -76,7 +76,15 @@ const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const getAmenities = (room: any) => {
   if (Array.isArray(room?.amenities)) {
-    return room.amenities.filter(Boolean);
+    return room.amenities
+      .map((amenity: any) => {
+        if (typeof amenity === "string") return amenity;
+        if (amenity && typeof amenity === "object") {
+          return amenity.label || amenity.slug || amenity.name || null;
+        }
+        return null;
+      })
+      .filter((amenity: string | null): amenity is string => Boolean(amenity));
   }
 
   if (room?.amenities && typeof room.amenities === "object") {
@@ -138,13 +146,39 @@ const formatPricingDate = (value: string) =>
     timeZone: "UTC",
   }).format(parseDateOnlyAsUtc(value) || new Date(`${value}T00:00:00.000Z`));
 
-const formatAmenity = (value: string) =>
-  value
+const formatAmenity = (value: unknown) => {
+  const candidate =
+    typeof value === "string"
+      ? value
+      : value && typeof value === "object"
+        ? (value as any)?.label || (value as any)?.slug || (value as any)?.name || ""
+        : String(value ?? "");
+
+  const normalized = String(candidate ?? "").trim();
+
+  if (!normalized) return "";
+
+  return normalized
     .replace(/([A-Z])/g, " $1")
     .replace(/[_-]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatBusinessType = (value: unknown) => {
+  const normalized = String(value ?? "").trim().toUpperCase();
+
+  if (normalized === "GUEST_HOUSE") {
+    return "Guesthouse";
+  }
+
+  return String(value ?? "")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
 const expandDateRange = (start: string, end: string) => {
   const dates = new Set<string>();
@@ -579,9 +613,11 @@ const RoomDetail = () => {
                             "Verified provider"}
                         </Heading>
                         <SubHeading sx={{ color: "#475569" }}>
-                          {(provider?.businessType ||
-                            room?.provider?.providerProfile?.businessType ||
-                            "Stay provider") +
+                          {formatBusinessType(
+                            provider?.businessType ||
+                              room?.provider?.providerProfile?.businessType ||
+                              "Stay provider"
+                          ) +
                             " - " +
                             getProviderLocation(provider || room?.provider?.providerProfile)}
                         </SubHeading>

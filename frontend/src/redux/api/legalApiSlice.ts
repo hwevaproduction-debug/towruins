@@ -13,7 +13,10 @@ export interface LegalDocument {
 
 export const legalApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPublicLegalDoc: builder.query<{ status: string; data: LegalDocument }, string>({
+    getPublicLegalDoc: builder.query<
+      { status: string; data: LegalDocument | null },
+      string
+    >({
       query: (slug) => ({
         url: `legal-docs/${slug}`,
         method: "GET",

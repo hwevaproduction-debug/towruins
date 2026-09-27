@@ -10,6 +10,8 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import DeclineDialog from "../components/DeclineDialog";
 import AppButton from "../../../../components/ui/AppButton";
 import AppCard from "../../../../components/ui/AppCard";
+import BookingDetailsDialog from "../../../../components/booking/BookingDetailsDialog";
+import { useGetBookingByIdQuery } from "../../../../redux/api/stayApiSlice";
 
 type BookingsTabProps = {
   bookings: any[];
@@ -42,11 +44,20 @@ const getStatusChipSx = (status: string) => {
 const BookingsTab = ({ bookings }: BookingsTabProps) => {
   const [filter, setFilter] = useState("ALL");
   const [selected, setSelected] = useState<any>(null);
+  const [detailsBooking, setDetailsBooking] = useState<any>(null);
   const [declining, setDeclining] = useState<any>(null);
   const [confirmBooking, { isLoading: confirming }] = useConfirmBookingMutation();
   const [declineBooking, { isLoading: decliningBooking }] = useDeclineBookingMutation();
   const [cancelBooking, { isLoading: canceling }] = useCancelBookingMutation();
-  const [checkInBooking, { isLoading: checkingIn }] = useCheckInBookingMutation();
+  const [checkInBooking] = useCheckInBookingMutation();
+  const detailsBookingId = getBookingId(detailsBooking);
+  const {
+    data: loadedDetailsBooking,
+    isFetching: loadingDetailsBooking,
+    error: detailsBookingError,
+  } = useGetBookingByIdQuery(detailsBookingId || "", {
+    skip: !detailsBookingId,
+  });
 
   const filteredBookings = useMemo(
     () =>
@@ -94,6 +105,9 @@ const BookingsTab = ({ bookings }: BookingsTabProps) => {
               </Typography>
             </div>
             <Stack direction="row" spacing={1} alignItems="center">
+              <AppButton size="small" variant="outlined" onClick={() => setDetailsBooking(booking)}>
+                View Details
+              </AppButton>
               {booking?.status === "PENDING_CONFIRMATION" ? (
                 <>
                   <AppButton size="small" variant="outlined" onClick={() => setSelected(booking)}>
@@ -150,6 +164,14 @@ const BookingsTab = ({ bookings }: BookingsTabProps) => {
           await declineBooking({ id: getBookingId(declining), reason }).unwrap();
           setDeclining(null);
         }}
+      />
+      <BookingDetailsDialog
+        open={Boolean(detailsBooking)}
+        onClose={() => setDetailsBooking(null)}
+        booking={loadedDetailsBooking || detailsBooking}
+        kind="stay"
+        loading={loadingDetailsBooking}
+        error={detailsBookingError}
       />
     </Stack>
   );

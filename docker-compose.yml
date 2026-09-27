@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-creapy}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in your environment or .env file}
@@ -14,7 +15,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in your environment or .env file}
@@ -58,19 +59,26 @@ services:
     restart: unless-stopped
 
   backend:
-    env_file:
-      - ./backend/.env
     build: ./backend
     depends_on:
       postgres:
         condition: service_healthy
+    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npm start"
     expose:
       - "5000"
     environment:
       DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL in your environment or .env file}"
+      NODE_ENV: "${NODE_ENV:-production}"
       JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in your environment or .env file}"
       JWT_EXPIRES_IN: "${JWT_EXPIRES_IN:-30d}"
       COOKIE_SECRET: "${COOKIE_SECRET:?Set COOKIE_SECRET in your environment or .env file}"
+      FRONTEND_URL: "${FRONTEND_URL:?Set FRONTEND_URL in your environment or .env file}"
+      APP_BASE_URL: "${APP_BASE_URL:-${FRONTEND_URL}}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-${FRONTEND_URL}}"
+      PAYMENT_PROVIDER: "${PAYMENT_PROVIDER:-mock}"
+      SMS_PROVIDER: "${SMS_PROVIDER:-mock}"
+      SKIP_EMAIL_VERIFICATION: "${SKIP_EMAIL_VERIFICATION:-false}"
+      SKIP_PHONE_VERIFICATION: "${SKIP_PHONE_VERIFICATION:-false}"
       S3_BUCKET: "${S3_BUCKET:-creapy-uploads}"
       S3_REGION: "${S3_REGION:-us-east-1}"
       S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in your environment or .env file}"
@@ -83,13 +91,22 @@ services:
       - uploads:/srv/uploads
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/', (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:5000/api/v1', (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:?Set REACT_APP_API_URL in your staging env file}
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
+        REACT_APP_FIREBASE_API_KEY: ${REACT_APP_FIREBASE_API_KEY:-}
+        REACT_APP_TOKEN_PAYER_ROLE: ${REACT_APP_TOKEN_PAYER_ROLE:-provider}
+        REACT_APP_LISTING_FEE_AMOUNT: ${REACT_APP_LISTING_FEE_AMOUNT:-5}
+        REACT_APP_TENANT_PREMIUM_AMOUNT: ${REACT_APP_TENANT_PREMIUM_AMOUNT:-10}
     expose:
       - "80"
     restart: unless-stopped
@@ -101,10 +118,24 @@ services:
       start_period: 10s
 
   nginx:
-    image: nginx:stable-alpine
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    entrypoint: ["nginx", "-g", "daemon off;"]
+    build: ./docker/nginx
+    entrypoint:
+      - sh
+      - -c
+      - |
+        for domain in stage.townruins.com townruins.com; do
+          cert_dir="/etc/letsencrypt/live/$$domain"
+          if [ -f "$$cert_dir/fullchain.pem" ] && [ -f "$$cert_dir/privkey.pem" ]; then
+            continue
+          fi
+          mkdir -p "$$cert_dir"
+          openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+            -subj "/CN=$$domain" \
+            -addext "subjectAltName=DNS:$$domain" \
+            -keyout "$$cert_dir/privkey.pem" \
+            -out "$$cert_dir/fullchain.pem"
+        done
+        exec nginx -g 'daemon off;'
     depends_on:
       backend:
         condition: service_healthy
@@ -114,7 +145,7 @@ services:
       - "443:443"
       - "80:80"
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - letsencrypt:/etc/letsencrypt
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - uploads:/srv/uploads:ro
     restart: unless-stopped
@@ -136,3 +167,4 @@ volumes:
   pgbackups:
   uploads:
   minio_data:
+  letsencrypt:

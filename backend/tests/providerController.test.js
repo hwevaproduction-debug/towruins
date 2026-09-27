@@ -67,6 +67,7 @@ test("registerProvider accepts flat account and provider profile fields", async 
   process.env.SKIP_EMAIL_VERIFICATION = "true";
   const providerController = loadProviderController();
   let createdUserData = null;
+  let createdAccommodationData = null;
 
   prisma.$transaction = async (callback) =>
     callback({
@@ -85,7 +86,10 @@ test("registerProvider accepts flat account and provider profile fields", async 
         },
       },
       accommodation: {
-        create: async () => ({ id: "accommodation-1" }),
+        create: async ({ data }) => {
+          createdAccommodationData = data;
+          return { id: "accommodation-1" };
+        },
       },
     });
   prisma.user.update = async ({ where, data }) => ({
@@ -115,4 +119,61 @@ test("registerProvider accepts flat account and provider profile fields", async 
   assert.equal(result.body.data.user._id, "provider-1");
   assert.equal(createdUserData.role, "provider");
   assert.notEqual(createdUserData.password, "TestPass123!");
+  assert.equal(createdAccommodationData.type, "HOTEL");
+});
+
+test("registerProvider accepts and persists the canonical guesthouse type", async () => {
+  process.env.SKIP_EMAIL_VERIFICATION = "true";
+  const providerController = loadProviderController();
+  let createdUserData = null;
+  let createdAccommodationData = null;
+
+  prisma.$transaction = async (callback) =>
+    callback({
+      user: {
+        create: async ({ data }) => {
+          createdUserData = data;
+          return {
+            id: "provider-guesthouse",
+            username: data.username,
+            email: data.email,
+            role: data.role,
+            providerProfile: data.providerProfile,
+            createdAt: new Date("2026-08-06T00:00:00.000Z"),
+            updatedAt: new Date("2026-08-06T00:00:00.000Z"),
+          };
+        },
+      },
+      accommodation: {
+        create: async ({ data }) => {
+          createdAccommodationData = data;
+          return { id: "accommodation-guesthouse" };
+        },
+      },
+    });
+  prisma.user.update = async ({ data }) => ({
+    id: "provider-guesthouse",
+    username: createdUserData.username,
+    email: createdUserData.email,
+    role: "provider",
+    isEmailVerified: data.isEmailVerified,
+    providerProfile: createdUserData.providerProfile,
+  });
+
+  const result = await invokeController(providerController.registerProvider, {
+    body: {
+      username: "guesthouse-host",
+      email: "guesthouse@example.com",
+      password: "TestPass123!",
+      businessName: "Town Guesthouse",
+      businessType: "GUEST_HOUSE",
+      contactPhone: "+263771234567",
+      address: "1 Main Street",
+      location: { province: "Harare", city: "Harare" },
+    },
+  });
+
+  assert.equal(result.statusCode, 201);
+  assert.equal(createdAccommodationData.type, "GUEST_HOUSE");
+  assert.equal(createdUserData.providerProfile.businessType, "GUEST_HOUSE");
 });

@@ -228,7 +228,8 @@ export function getApiBaseUrl() {
   );
   if (backendUrl) return joinUrl(backendUrl, "api/v1");
 
-  return "";
+  // The production reverse proxy mounts the API under this same-origin path.
+  return "/api/v1";
 }
 
 export function buildUploadSignUrl(contentType: string, folder: string) {

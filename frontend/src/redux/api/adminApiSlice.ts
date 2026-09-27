@@ -145,6 +145,97 @@ export interface AdminBooking {
   settledAt?: string | null;
 }
 
+export interface AdminUser {
+  id: string;
+  _id: string;
+  username: string;
+  email: string;
+  phoneNumber?: string | null;
+  role: string;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
+  verificationStatus: string;
+  accountSuspendedAt?: string | null;
+  onboardingStatus?: string;
+  createdAt: string;
+  providerProfile?: {
+    businessName?: string | null;
+    businessType?: string | null;
+    verificationStatus?: string | null;
+    suspendedAt?: string | null;
+  } | null;
+  _count?: {
+    listings?: number;
+    accommodations?: number;
+    rooms?: number;
+    guestBookings?: number;
+    providerBookings?: number;
+    tenantEngagements?: number;
+    landlordEngagements?: number;
+  };
+}
+
+export interface AdminUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  verificationStatus?: string;
+  accountStatus?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface AdminUserActivityRecord {
+  id: string;
+  _id: string;
+  kind?: string;
+  name?: string;
+  type?: string;
+  status?: string;
+  createdAt?: string;
+  href?: string;
+  location?: string;
+  relationToUser?: string;
+  message?: string;
+  listing?: { id?: string; _id?: string; name?: string; userId?: string } | null;
+  room?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    accommodation?: { name?: string; city?: string; province?: string } | null;
+  } | null;
+  guest?: { username?: string } | null;
+  provider?: { username?: string } | null;
+  tenant?: { username?: string } | null;
+  landlord?: { username?: string } | null;
+  checkIn?: string;
+  checkOut?: string;
+  paymentStatus?: string;
+  settlementStatus?: string;
+  settledAt?: string | null;
+  moderationStatus?: string;
+  isPublished?: boolean;
+  monthlyRent?: number;
+  studentAccommodation?: boolean;
+}
+
+interface AdminUserCollectionResponse {
+  data: AdminUser[];
+  total: number;
+  results: number;
+  page: number;
+  limit: number;
+}
+
+interface AdminUserActivityResponse {
+  data: AdminUserActivityRecord[];
+  total: number;
+  results: number;
+  page: number;
+  limit: number;
+}
+
 interface AdminBookingsResponse {
   data: { bookings: AdminBooking[] };
   results: number;
@@ -837,7 +928,7 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       Pick<LegalDocument, "slug" | "title" | "content">
     >({
       query: (body) => ({ url: "admin/legal-docs", method: "POST", body }),
-      invalidatesTags: ["AuditLog"],
+      invalidatesTags: ["AuditLog", "LegalDoc"],
     }),
     updateLegalDoc: builder.mutation<
       { status: string; data: LegalDocument },
@@ -848,7 +939,7 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         method: "PUT",
         body,
       }),
-      invalidatesTags: ["AuditLog"],
+      invalidatesTags: ["AuditLog", "LegalDoc"],
     }),
     // Admin Onboarding & Invitations
     validateImport: builder.mutation<any, FormData>({
@@ -896,15 +987,83 @@ export const adminApiSlice = apiSlice.injectEndpoints({
           : [{ type: "Invitation" as const, id: "LIST" }],
     }),
 
-    getAdminUsers: builder.query<{ data: any[]; total?: number }, { page?: number; limit?: number } | void>({
+    getAdminUsers: builder.query<AdminUserCollectionResponse, AdminUsersParams | void>({
       query: (params) => ({ url: `admin/users${buildSearchParams((params || {}) as Record<string, string | number | undefined>)}`, method: "GET" }),
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map((user: any) => ({ type: "User" as const, id: user.id || user._id })),
+              ...result.data.map((user) => ({ type: "User" as const, id: user.id || user._id })),
               { type: "User" as const, id: "LIST" },
             ]
           : [{ type: "User" as const, id: "LIST" }],
+    }),
+    getAdminUser: builder.query<{ data: AdminUser }, string>({
+      query: (id) => ({ url: `admin/users/${id}`, method: "GET" }),
+      providesTags: (_result, _error, id) => [{ type: "User", id }],
+    }),
+    getAdminUserActivity: builder.query<
+      AdminUserActivityResponse,
+      { id: string; section: "listings" | "engagements" | "bookings"; page?: number; limit?: number }
+    >({
+      query: ({ id, ...params }) => ({
+        url: `admin/users/${id}/activity${buildSearchParams(params)}`,
+        method: "GET",
+      }),
+      providesTags: (_result, _error, { id }) => [{ type: "User", id }],
+    }),
+    createAdminUser: builder.mutation<{ data: AdminUser }, {
+      username: string;
+      email: string;
+      phoneNumber?: string;
+      role: string;
+      password: string;
+    }>({
+      query: (body) => ({ url: "admin/users", method: "POST", body }),
+      invalidatesTags: [{ type: "User", id: "LIST" }, "AuditLog"],
+    }),
+    updateAdminUser: builder.mutation<{ data: AdminUser }, {
+      id: string;
+      username: string;
+      email: string;
+      phoneNumber?: string;
+      role: string;
+      isEmailVerified: boolean;
+      isPhoneVerified: boolean;
+      verificationStatus: string;
+    }>({
+      query: ({ id, ...body }) => ({ url: `admin/users/${id}`, method: "PATCH", body }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "User", id },
+        { type: "User", id: "LIST" },
+        "AuditLog",
+      ],
+    }),
+    resetAdminUserPassword: builder.mutation<{ status: string; message: string }, {
+      id: string;
+      password: string;
+    }>({
+      query: ({ id, password }) => ({
+        url: `admin/users/${id}/reset-password`,
+        method: "POST",
+        body: { password },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: "User", id }, "AuditLog"],
+    }),
+    suspendAdminUser: builder.mutation<{ data: AdminUser }, string>({
+      query: (id) => ({ url: `admin/users/${id}/suspend`, method: "POST" }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "User", id },
+        { type: "User", id: "LIST" },
+        "AuditLog",
+      ],
+    }),
+    reactivateAdminUser: builder.mutation<{ data: AdminUser }, string>({
+      query: (id) => ({ url: `admin/users/${id}/reactivate`, method: "POST" }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "User", id },
+        { type: "User", id: "LIST" },
+        "AuditLog",
+      ],
     }),
     resendInvitation: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({ url: `admin/invitations/${id}/resend`, method: "POST" }),
@@ -937,7 +1096,7 @@ export const adminApiSlice = apiSlice.injectEndpoints({
 
     archiveLegalDoc: builder.mutation<{ status: string; data: LegalDocument }, string>({
       query: (id) => ({ url: `admin/legal-docs/${id}`, method: "DELETE" }),
-      invalidatesTags: ["AuditLog"],
+      invalidatesTags: ["AuditLog", "LegalDoc"],
     }),
   }),
 });
@@ -956,6 +1115,13 @@ export const {
   useResendInvitationMutation,
   useRevokeInvitationMutation,
   useGetAdminUsersQuery,
+  useGetAdminUserQuery,
+  useGetAdminUserActivityQuery,
+  useCreateAdminUserMutation,
+  useUpdateAdminUserMutation,
+  useResetAdminUserPasswordMutation,
+  useSuspendAdminUserMutation,
+  useReactivateAdminUserMutation,
   useValidateClaimQuery,
   useClaimAccountMutation,
   useCompleteOnboardingMutation,

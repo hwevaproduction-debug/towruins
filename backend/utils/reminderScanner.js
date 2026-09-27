@@ -152,7 +152,9 @@ const startReminderScanner = () => {
   }
 
   scheduledTask = cron.schedule(expression, () => {
-    void runReminderScan();
+    void runReminderScan().catch((err) => {
+      console.error(`[notification] reminder scan error: ${err.message}`);
+    });
   });
   console.log(`[notification] Scheduled reminder scanner: ${expression}`);
 

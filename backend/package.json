@@ -11,7 +11,7 @@
     "s3:cors": "node scripts/configure-s3-cors.js",
     "db:migrate:deploy": "prisma migrate deploy",
     "seed": "node seed/seed.js",
-    "seed:db": "node seed/seed-direct.js",
+    "seed:db": "node seed/seed-direct.js && node seed/seed-legal-docs.js",
     "seed:amenities": "node seed/seed-amenities.js",
     "seed:legal": "node seed/seed-legal-docs.js",
     "seed:super-admin": "node seed/seed-super-admin.js",

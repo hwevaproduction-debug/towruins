@@ -1,5 +1,5 @@
 // React Imports
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 // Material UI Imports
@@ -49,6 +49,18 @@ const Login = () => {
     appearence: false,
     type: "",
   });
+
+  useEffect(() => {
+    const authNotice = sessionStorage.getItem("authNotice");
+    if (!authNotice) return;
+
+    sessionStorage.removeItem("authNotice");
+    setToast({
+      message: authNotice,
+      appearence: true,
+      type: "error",
+    });
+  }, []);
 
   const hideShowPassword = () => {
     setShowPassword(!showPassword);

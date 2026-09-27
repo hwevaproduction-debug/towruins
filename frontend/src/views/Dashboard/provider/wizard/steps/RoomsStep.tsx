@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Grid, MenuItem, Paper, Stack, TextField, Typography, Box, Chip, Tooltip } from "@mui/material";
+import { Button, Grid, MenuItem, Paper, Stack, TextField, Typography, Box } from "@mui/material";
 import { toEntityArray, useCreateRoomMutation, useGetMyRoomsQuery } from "../../../../../redux/api/providerApiSlice";
 
 type RoomsStepProps = {

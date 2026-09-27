@@ -47,12 +47,16 @@ const ListingRestoreModal = ({
     skip: !open,
   });
 
-  const restorationOptions: RestorationOption[] = configData?.data?.durations || [
-    { days: 1, label: "1 day" },
-    { days: 3, label: "3 days" },
-    { days: 7, label: "7 days" },
-    { days: 14, label: "14 days" },
-  ];
+  const restorationOptions: RestorationOption[] = useMemo(
+    () =>
+      configData?.data?.durations || [
+        { days: 1, label: "1 day" },
+        { days: 3, label: "3 days" },
+        { days: 7, label: "7 days" },
+        { days: 14, label: "14 days" },
+      ],
+    [configData?.data?.durations]
+  );
 
   const minTokensPerDay = configData?.data?.minTokensPerDay || 1;
   const tokensToDeduct = selectedDays * minTokensPerDay;

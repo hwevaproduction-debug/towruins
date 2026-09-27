@@ -318,7 +318,7 @@ test("signup removes a newly created landlord if phone verification SMS delivery
 
 test("login allows verified legacy-compatible users to access the API", async () => {
   const authController = loadAuthController();
-  prisma.user.findUnique = async () => ({
+  prisma.user.findFirst = async () => ({
     id: "legacy-1",
     email: "legacy@example.com",
     password:
@@ -340,7 +340,7 @@ test("login allows verified legacy-compatible users to access the API", async ()
 
 test("login strips OTP and verification secrets from the auth payload", async () => {
   const authController = loadAuthController();
-  prisma.user.findUnique = async () => ({
+  prisma.user.findFirst = async () => ({
     id: "legacy-1",
     email: "legacy@example.com",
     username: "legacy-user",
@@ -374,7 +374,7 @@ test("login strips OTP and verification secrets from the auth payload", async ()
 
 test("login blocks users whose verification state is unverified", async () => {
   const authController = loadAuthController();
-  prisma.user.findUnique = async () => ({
+  prisma.user.findFirst = async () => ({
     id: "legacy-2",
     email: "pending@example.com",
     password:
@@ -392,6 +392,44 @@ test("login blocks users whose verification state is unverified", async () => {
   assert(result.error);
   assert.equal(result.error.statusCode, 403);
   assert.equal(result.error.message, "Please verify your email before logging in");
+});
+
+test("login blocks users with an account-wide suspension", async () => {
+  const authController = loadAuthController();
+  prisma.user.findFirst = async () => ({
+    id: "suspended-1",
+    email: "suspended@example.com",
+    password:
+      "$2a$12$eSWb0YLeBJ2rwbW5rsHJL.ue4SqeYpybOXnMwoDdYPSop4WPNStoO",
+    isEmailVerified: true,
+    accountSuspendedAt: new Date(),
+  });
+
+  const result = await invokeController(authController.login, {
+    body: {
+      email: "suspended@example.com",
+      password: "password123",
+    },
+  });
+
+  assert.equal(result.error.statusCode, 403);
+  assert.match(result.error.message, /account is suspended/);
+});
+
+test("protected requests reject existing tokens for suspended users", async () => {
+  const authController = loadAuthController();
+  prisma.user.findUnique = async () => ({
+    id: "suspended-1",
+    accountSuspendedAt: new Date(),
+  });
+  const token = jwt.sign({ id: "suspended-1" }, process.env.JWT_SECRET);
+
+  const result = await invokeController(authController.protect, {
+    headers: { authorization: `Bearer ${token}` },
+  });
+
+  assert.equal(result.error.statusCode, 403);
+  assert.match(result.error.message, /account is suspended/);
 });
 
 test("verifyEmail returns a login-shaped success response for valid tokens", async () => {
@@ -447,6 +485,28 @@ test("verifyEmail returns a login-shaped success response for valid tokens", asy
   assert.equal("emailVerificationToken" in result.body.data.user, false);
   assert.equal("emailVerificationExpires" in result.body.data.user, false);
   assert.equal("nationalId" in result.body.data.user, false);
+});
+
+test("verifyEmail does not issue a session for a suspended user", async () => {
+  const authController = loadAuthController();
+  let updateCalled = false;
+
+  prisma.user.findFirst = async () => ({
+    id: "suspended-email-user",
+    accountSuspendedAt: new Date(),
+  });
+  prisma.user.update = async () => {
+    updateCalled = true;
+    throw new Error("should not update a suspended user");
+  };
+
+  const result = await invokeController(authController.verifyEmail, {
+    query: { token: "raw-verification-token" },
+  });
+
+  assert.equal(result.error.statusCode, 403);
+  assert.match(result.error.message, /account is suspended/);
+  assert.equal(updateCalled, false);
 });
 
 test("verifyEmail returns a minimal pending-phone payload for landlords", async () => {
@@ -740,6 +800,28 @@ test("verifyPhone scopes OTP verification to the provided landlord email", async
   assert.equal(jwt.verify(result.body.token, process.env.JWT_SECRET).id, "landlord-1");
 });
 
+test("verifyPhone does not issue a session for a suspended user", async () => {
+  const authController = loadAuthController();
+  let updateCalled = false;
+
+  prisma.user.findFirst = async () => ({
+    id: "suspended-phone-user",
+    accountSuspendedAt: new Date(),
+  });
+  prisma.user.update = async () => {
+    updateCalled = true;
+    throw new Error("should not update a suspended user");
+  };
+
+  const result = await invokeController(authController.verifyPhone, {
+    body: { email: "suspended@example.com", otp: "123456" },
+  });
+
+  assert.equal(result.error.statusCode, 403);
+  assert.match(result.error.message, /account is suspended/);
+  assert.equal(updateCalled, false);
+});
+
 test("getMe strips OTP and verification secrets from the authenticated payload", async () => {
   const authController = loadAuthController();
 
@@ -925,6 +1007,26 @@ test("google marks existing unverified users as verified before issuing a token"
   });
   assert.ok(result.body.token);
   assert.equal(result.body.data.user._id, "google-user-1");
+});
+
+test("google does not issue a session for a suspended user", async () => {
+  const authController = loadAuthController();
+
+  prisma.user.findUnique = async () => ({
+    id: "suspended-google-user",
+    email: "suspended-google@example.com",
+    accountSuspendedAt: new Date(),
+  });
+
+  const result = await invokeController(authController.google, {
+    body: {
+      name: "Suspended User",
+      email: "suspended-google@example.com",
+    },
+  });
+
+  assert.equal(result.error.statusCode, 403);
+  assert.match(result.error.message, /account is suspended/);
 });
 
 test("google does not re-save existing users that are already verified", async () => {

@@ -208,6 +208,7 @@ model User {
   verificationIdUrl        String?
   verificationSelfieUrl    String?
   verificationSubmittedAt  DateTime?
+  accountSuspendedAt       DateTime?
   consentAcceptedAt        DateTime?
   tokenBalance             Int                          @default(0)
   walletInitialized        Boolean                      @default(false)

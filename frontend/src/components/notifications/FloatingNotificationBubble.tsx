@@ -52,7 +52,7 @@ const FloatingNotificationBubble = () => {
   );
   const [markAllAsRead] = useMarkAllAsReadMutation();
 
-  const notifications = data?.data || [];
+  const notifications = useMemo(() => data?.data || [], [data?.data]);
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notification) => {
       if (activeFilter === "tokens") {

@@ -98,6 +98,12 @@ router.post("/temporary-stays/:id/reinstate", adminController.reinstateTemporary
 
 // Admin users
 router.get("/users", adminUserController.getAdminUsers);
+router.post("/users", adminUserController.createAdminUser);
+router.get("/users/:id/activity", adminUserController.getAdminUserActivity);
+router.patch("/users/:id", adminUserController.updateAdminUser);
+router.post("/users/:id/reset-password", adminUserController.resetAdminUserPassword);
+router.post("/users/:id/suspend", adminUserController.suspendAdminUser);
+router.post("/users/:id/reactivate", adminUserController.reactivateAdminUser);
 router.get("/users/:id", adminUserController.getAdminUserById);
 
 // Admin legal documents

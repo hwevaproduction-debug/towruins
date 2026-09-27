@@ -81,6 +81,7 @@ function createRequest(app) {
     get: (path) => run("GET", path),
     post: (path) => run("POST", path),
     put: (path) => run("PUT", path),
+    patch: (path) => run("PATCH", path),
     delete: (path) => run("DELETE", path),
   };
 }
@@ -158,6 +159,10 @@ const adminRoutes = [
   { method: "get", path: "/api/v1/admin/reports" },
   { method: "get", path: "/api/v1/admin/audit-logs" },
   { method: "post", path: "/api/v1/admin/disputes/fake-id/review" },
+  { method: "post", path: "/api/v1/admin/users" },
+  { method: "patch", path: "/api/v1/admin/users/fake-id" },
+  { method: "post", path: "/api/v1/admin/users/fake-id/reset-password" },
+  { method: "post", path: "/api/v1/admin/users/fake-id/suspend" },
 ];
 
 const tenantForbiddenRoutes = [
@@ -168,6 +173,11 @@ const tenantForbiddenRoutes = [
   { method: "get", path: "/api/v1/admin/reports" },
   { method: "get", path: "/api/v1/admin/audit-logs" },
   { method: "post", path: "/api/v1/admin/disputes/fake-id/review" },
+  { method: "get", path: "/api/v1/admin/users" },
+  { method: "post", path: "/api/v1/admin/users" },
+  { method: "patch", path: "/api/v1/admin/users/fake-id" },
+  { method: "post", path: "/api/v1/admin/users/fake-id/reset-password" },
+  { method: "post", path: "/api/v1/admin/users/fake-id/suspend" },
 ];
 
 const publicProtectedRoutes = [

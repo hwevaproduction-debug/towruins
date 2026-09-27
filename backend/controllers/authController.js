@@ -526,6 +526,10 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Incorrect password", 401));
   }
 
+  if (user.accountSuspendedAt) {
+    return next(new AppError("This account is suspended. Contact support for assistance.", 403));
+  }
+
   if (user.isEmailVerified !== true) {
     return next(new AppError("Please verify your email before logging in", 403));
   }
@@ -552,6 +556,9 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
 
   if (!user) {
     return next(new AppError("Verification link is invalid or has expired", 400));
+  }
+  if (user.accountSuspendedAt) {
+    return next(new AppError("This account is suspended. Contact support for assistance.", 403));
   }
 
   const verifiedUser = await prisma.user.update({
@@ -699,6 +706,10 @@ exports.google = catchAsync(async (req, res, next) => {
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
   if (user) {
+    if (user.accountSuspendedAt) {
+      return next(new AppError("This account is suspended. Contact support for assistance.", 403));
+    }
+
     let currentUser = user;
     if (user.isEmailVerified !== true || user.isPhoneVerified !== true) {
       currentUser = await prisma.user.update({
@@ -759,6 +770,9 @@ exports.verifyPhone = catchAsync(async (req, res, next) => {
 
   if (!user) {
     return next(new AppError("OTP is invalid or has expired", 400));
+  }
+  if (user.accountSuspendedAt) {
+    return next(new AppError("This account is suspended. Contact support for assistance.", 403));
   }
 
   const updatedUser = await prisma.user.update({
@@ -1070,6 +1084,10 @@ exports.protect = catchAsync(async (req, res, next) => {
         401
       )
     );
+  }
+
+  if (freshUser.accountSuspendedAt) {
+    return next(new AppError("This account is suspended. Contact support for assistance.", 403));
   }
 
   // GRANT ACCESS TO PROTECTED ROUTE

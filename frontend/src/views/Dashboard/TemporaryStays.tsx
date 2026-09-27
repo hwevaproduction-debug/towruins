@@ -6,7 +6,7 @@ import AdminTemporaryStayForm from "./components/AdminTemporaryStayForm";
 
 const TemporaryStays: React.FC = () => {
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const page = 1;
   const { data, isLoading, refetch } = useGetTemporaryStaysQuery({ search, page, limit: 20 });
   const [publish] = usePublishTemporaryStayMutation();
   const [unpublish] = useUnpublishTemporaryStayMutation();
@@ -26,8 +26,8 @@ const TemporaryStays: React.FC = () => {
       {isLoading ? (
         <CircularProgress />
       ) : (
-        <TableContainer>
-          <Table size="small">
+        <TableContainer sx={{ width: "100%", maxHeight: "60dvh", overflow: "auto" }}>
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell>Title</TableCell>

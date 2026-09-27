@@ -127,7 +127,9 @@ const startExpiryScanner = () => {
   }
 
   scheduledTask = cron.schedule(expression, () => {
-    void runExpiryScanner();
+    void runExpiryScanner().catch((err) => {
+      console.error(`[listing-expiry] scanner error: ${err.message}`);
+    });
   });
   console.log(`[listing-expiry] Scheduled expiry scanner: ${expression}`);
   return scheduledTask;

@@ -46,6 +46,13 @@ jest.mock('../../redux/api/adminApiSlice', () => ({
   useArchiveLegalDocMutation: jest.fn(),
   useListInvitationsQuery: jest.fn(),
   useGetAdminUsersQuery: jest.fn(),
+  useGetAdminUserQuery: jest.fn(),
+  useGetAdminUserActivityQuery: jest.fn(),
+  useCreateAdminUserMutation: jest.fn(),
+  useUpdateAdminUserMutation: jest.fn(),
+  useResetAdminUserPasswordMutation: jest.fn(),
+  useSuspendAdminUserMutation: jest.fn(),
+  useReactivateAdminUserMutation: jest.fn(),
   useResendInvitationMutation: jest.fn(),
   useRevokeInvitationMutation: jest.fn(),
   useValidateImportMutation: jest.fn(),
@@ -82,13 +89,28 @@ describe('Admin Dashboard - Users Tab', () => {
     
     // New onboarding endpoints
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: [] },
+      data: { data: { invitations: [] } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
       data: { data: [] },
       isFetching: false,
     });
+    (adminApiSlice.useGetAdminUserQuery as jest.Mock).mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      isError: false,
+    });
+    (adminApiSlice.useGetAdminUserActivityQuery as jest.Mock).mockReturnValue({
+      data: { data: [], total: 0 },
+      isFetching: false,
+      isError: false,
+    });
+    (adminApiSlice.useCreateAdminUserMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
+    (adminApiSlice.useUpdateAdminUserMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
+    (adminApiSlice.useResetAdminUserPasswordMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
+    (adminApiSlice.useSuspendAdminUserMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
+    (adminApiSlice.useReactivateAdminUserMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
     (adminApiSlice.useResendInvitationMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
     (adminApiSlice.useRevokeInvitationMutation as jest.Mock).mockReturnValue([jest.fn(), { isLoading: false }]);
     (adminApiSlice.useValidateImportMutation as jest.Mock).mockReturnValue([jest.fn()]);
@@ -96,6 +118,12 @@ describe('Admin Dashboard - Users Tab', () => {
   });
 
   test('renders admin dashboard with tabs including Users', () => {
+    const triggerSearch = jest.fn();
+    (adminApiSlice.useLazyGetAdminListingsQuery as jest.Mock).mockReturnValue([
+      triggerSearch,
+      { data: null, isFetching: false },
+    ]);
+
     render(
       <Provider store={mockStore as any}>
         <Router>
@@ -106,11 +134,25 @@ describe('Admin Dashboard - Users Tab', () => {
 
     const usersTab = screen.getByRole('tab', { name: /users/i });
     expect(usersTab).toBeInTheDocument();
+    expect(triggerSearch).toHaveBeenCalledTimes(1);
+    expect(triggerSearch).toHaveBeenCalledWith({
+      status: "",
+      category: "",
+      province: "",
+      city: "",
+      expiredFrom: "",
+      expiredTo: "",
+      uploadedFrom: "",
+      uploadedTo: "",
+      landlord: "",
+      page: 1,
+      limit: 20,
+    });
   });
 
   test('displays Users tab content when clicked', async () => {
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: [] },
+      data: { data: { invitations: [] } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -146,7 +188,7 @@ describe('Admin Dashboard - Users Tab', () => {
     ];
 
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: mockInvitations },
+      data: { data: { invitations: mockInvitations } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -168,7 +210,7 @@ describe('Admin Dashboard - Users Tab', () => {
     await waitFor(() => {
       expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
       expect(screen.getByText(/tenant/i)).toBeInTheDocument();
-      expect(screen.getByText(/SENT/i)).toBeInTheDocument();
+      expect(screen.getByText(/^SENT$/i)).toBeInTheDocument();
     });
   });
 
@@ -184,7 +226,7 @@ describe('Admin Dashboard - Users Tab', () => {
     ];
 
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: mockInvitations },
+      data: { data: { invitations: mockInvitations } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -223,7 +265,7 @@ describe('Admin Dashboard - Users Tab', () => {
     ];
 
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: mockInvitations },
+      data: { data: { invitations: mockInvitations } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -270,7 +312,7 @@ describe('Admin Dashboard - Users Tab', () => {
     ];
 
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: mockInvitations },
+      data: { data: { invitations: mockInvitations } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -307,15 +349,18 @@ describe('Admin Dashboard - Users Tab', () => {
     const mockUsers = [
       {
         id: 'user1',
-        firstName: 'John',
+        username: 'John',
         email: 'john@example.com',
         role: 'tenant',
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        verificationStatus: 'UNVERIFIED',
         createdAt: '2026-08-01T00:00:00Z',
       },
     ];
 
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: [] },
+      data: { data: { invitations: [] } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({
@@ -335,7 +380,7 @@ describe('Admin Dashboard - Users Tab', () => {
     fireEvent.click(usersTab);
 
     await waitFor(() => {
-      expect(screen.getByText(/John/i)).toBeInTheDocument();
+      expect(screen.getByText(/^John$/i)).toBeInTheDocument();
       expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
       expect(screen.getByText(/tenant/i)).toBeInTheDocument();
     });
@@ -366,7 +411,7 @@ describe('Admin Dashboard - Users Tab', () => {
     fireEvent.click(bulkImportButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/bulk import users/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /bulk import users/i })).toBeInTheDocument();
     });
   });
 
@@ -398,7 +443,7 @@ describe('Admin Dashboard - Users Tab', () => {
 
   test('shows empty state when no invitations exist', async () => {
     (adminApiSlice.useListInvitationsQuery as jest.Mock).mockReturnValue({
-      data: { data: [] },
+      data: { data: { invitations: [] } },
       isFetching: false,
     });
     (adminApiSlice.useGetAdminUsersQuery as jest.Mock).mockReturnValue({

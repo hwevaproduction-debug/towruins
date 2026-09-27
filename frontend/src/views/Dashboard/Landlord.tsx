@@ -57,6 +57,7 @@ import QuickActionsBar from "./components/QuickActionsBar";
 import TRTokenOnboarding from "./components/TRTokenOnboarding";
 import VerificationStatusCard from "./components/VerificationStatusCard";
 import ListingRestoreModal from "../../components/listing/ListingRestoreModal";
+import BookingDetailsDialog from "../../components/booking/BookingDetailsDialog";
 
 const getListingStatusBadge = (status: string) => {
   if (status === "pending_payment") {
@@ -240,6 +241,7 @@ const LandlordDashboard = () => {
   });
   const [restoreListingId, setRestoreListingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [detailsEngagement, setDetailsEngagement] = useState<any>(null);
 
   const {
     data: listingsData,
@@ -473,6 +475,14 @@ const LandlordDashboard = () => {
                     </AppButton>
                   </Box>
                 ) : null}
+                <AppButton
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setDetailsEngagement(engagement)}
+                  sx={{ mt: 1.5 }}
+                >
+                  View Details
+                </AppButton>
               </Box>
             ))
           )}
@@ -806,6 +816,12 @@ const LandlordDashboard = () => {
           </Box>
         </Box>
       </AppContainer>
+      <BookingDetailsDialog
+        open={Boolean(detailsEngagement)}
+        onClose={() => setDetailsEngagement(null)}
+        booking={detailsEngagement}
+        kind="engagement"
+      />
       <ListingRestoreModal
         open={Boolean(restoreListingId)}
         listingId={restoreListingId}

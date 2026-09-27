@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -19,7 +19,6 @@ import {
   TableHead,
   TableRow,
   Tabs,
-  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -34,6 +33,8 @@ import AppInput from "../../components/ui/AppInput";
 import AppSelect from "../../components/ui/AppSelect";
 import MUITable from "../../components/MUITable";
 import BulkImportDialog from "./components/BulkImportDialog";
+import AdminUsers from "./components/AdminUsers";
+import LegalDocumentWizard from "./components/LegalDocumentWizard";
 import { Heading, SubHeading } from "../../components/Heading";
 import TemporaryStays from "./TemporaryStays";
 import ToastAlert from "../../components/ToastAlert/ToastAlert";
@@ -57,12 +58,9 @@ import {
   useUpdateCommissionRateMutation,
   useVerifyProviderMutation,
   // onboarding / users
-  useValidateImportMutation,
-  useCreateImportMutation,
   useListInvitationsQuery,
   useResendInvitationMutation,
   useRevokeInvitationMutation,
-  useGetAdminUsersQuery,
 } from "../../redux/api/adminApiSlice";
 import { convertToFormattedDate } from "../../utils";
 
@@ -177,6 +175,12 @@ const statusChipColors = {
   default: { background: "#F1F5F9", color: "#64748B", fontWeight: 700 },
 };
 
+const adminTableContainerSx = {
+  width: "100%",
+  maxHeight: "60dvh",
+  overflow: "auto",
+};
+
 function getStatusChipColor(value?: string | null) {
   switch ((value || "").toLowerCase()) {
     case "approved":
@@ -241,6 +245,8 @@ const AdminDashboard: React.FC = () => {
     page: 1,
   });
   const [hasSearchedExpired, setHasSearchedExpired] = useState(false);
+  const expiredFiltersRef = useRef(expiredFilters);
+  expiredFiltersRef.current = expiredFilters;
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
@@ -315,8 +321,6 @@ const AdminDashboard: React.FC = () => {
   const [archiveLegalDoc, { isLoading: isArchivingLegalDoc }] =
     useArchiveLegalDocMutation();
 
-  const { data: usersData, isFetching: isFetchingUsers } =
-    useGetAdminUsersQuery({ page: 1, limit: 50 });
   const { data: invitationsData, isFetching: isFetchingInv } = useListInvitationsQuery();
   const [resendInvitation, { isLoading: isResendingInvitation }] =
     useResendInvitationMutation();
@@ -354,6 +358,15 @@ const AdminDashboard: React.FC = () => {
     new Set(bookings.map((booking) => booking.provider?._id).filter(Boolean))
   ).length;
   const legalDocs = legalDocsData?.data ?? [];
+
+  useEffect(() => {
+    if (activeTab !== "expired") {
+      return;
+    }
+
+    setHasSearchedExpired(true);
+    triggerSearch({ ...expiredFiltersRef.current, limit: ROWS_PER_PAGE });
+  }, [activeTab, triggerSearch]);
 
   useEffect(() => {
     if (selectedCount === 0 && showConfirm) {
@@ -899,8 +912,8 @@ const AdminDashboard: React.FC = () => {
             overflow: "hidden",
           }}
         >
-          <TableContainer sx={{ overflowX: "auto" }}>
-            <Table>
+          <TableContainer sx={adminTableContainerSx}>
+            <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ background: "background.paper" }}>
                 <TableCell padding="checkbox">
@@ -1513,22 +1526,30 @@ const AdminDashboard: React.FC = () => {
       content: "",
     });
 
-  const handleSaveLegalDoc = async () => {
+  const handleSaveLegalDoc = async (draft: {
+    slug: string;
+    title: string;
+    content: string;
+  }) => {
     try {
       if (legalDialog.mode === "edit" && legalDialog.doc) {
         await updateLegalDoc({
           id: legalDialog.doc.id,
-          title: legalDialog.title,
-          content: legalDialog.content,
+          title: draft.title,
+          content: draft.content,
         }).unwrap();
       } else {
         await createLegalDoc({
-          slug: legalDialog.slug,
-          title: legalDialog.title,
-          content: legalDialog.content,
+          slug: draft.slug,
+          title: draft.title,
+          content: draft.content,
         }).unwrap();
       }
-      setToast({ open: true, message: "Legal document saved.", type: "success" });
+      setToast({
+        open: true,
+        message: "Legal document saved and published.",
+        type: "success",
+      });
       closeLegalDialog();
     } catch (error) {
       setToast({
@@ -1570,8 +1591,8 @@ const AdminDashboard: React.FC = () => {
         ) : legalDocs.length === 0 ? (
           renderEmptyState("No legal documents yet.")
         ) : (
-          <TableContainer>
-            <Table>
+          <TableContainer sx={adminTableContainerSx}>
+            <Table stickyHeader>
               <TableHead>
                 <TableRow>
                   {["Title", "Slug", "Version", "Status", "Last Updated", "Actions"].map((header) => (
@@ -1616,8 +1637,6 @@ const AdminDashboard: React.FC = () => {
   );
 
   const renderUsers = () => {
-
-    const users = usersData?.data ?? [];
     const invitations = invitationsData?.data?.invitations ?? [];
 
     const handleResend = async (id: string) => {
@@ -1649,7 +1668,8 @@ const AdminDashboard: React.FC = () => {
           ) : invitations.length === 0 ? (
             renderEmptyState("No invitations found.")
           ) : (
-            <Table size="small">
+            <TableContainer sx={adminTableContainerSx}>
+            <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell>Email</TableCell>
@@ -1667,44 +1687,34 @@ const AdminDashboard: React.FC = () => {
                     <TableCell>{inv.status}</TableCell>
                     <TableCell>{inv.sentAt || inv.createdAt || "-"}</TableCell>
                     <TableCell>
-                      <AppButton size="small" onClick={() => handleResend(inv.id)}>Resend</AppButton>
-                      <AppButton size="small" variant="outlined" color="error" onClick={() => handleRevoke(inv.id)} sx={{ ml: 1 }}>Revoke</AppButton>
+                      <AppButton
+                        size="small"
+                        onClick={() => handleResend(inv.id)}
+                        disabled={isResendingInvitation || isRevokingInvitation}
+                      >
+                        Resend
+                      </AppButton>
+                      <AppButton
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleRevoke(inv.id)}
+                        disabled={isResendingInvitation || isRevokingInvitation}
+                        sx={{ ml: 1 }}
+                      >
+                        Revoke
+                      </AppButton>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </TableContainer>
           )}
         </AppCard>
 
         <AppCard>
-          <Typography sx={{ mb: 1, fontWeight: 700 }}>Users</Typography>
-          {isFetchingUsers ? (
-            <Box sx={{ py: 4, textAlign: "center" }}>Loading...</Box>
-          ) : users.length === 0 ? (
-            renderEmptyState("No users found.")
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Joined</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((u: any) => (
-                  <TableRow key={u.id || u._id}>
-                    <TableCell>{u.firstName || u.name || "-"}</TableCell>
-                    <TableCell>{u.email || "-"}</TableCell>
-                    <TableCell>{u.role || "-"}</TableCell>
-                    <TableCell>{u.createdAt || "-"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <AdminUsers />
         </AppCard>
       </>
     );
@@ -1849,48 +1859,14 @@ const AdminDashboard: React.FC = () => {
           </AppButton>
         </DialogActions>
       </Dialog>
-      <Dialog open={legalDialog.open} onClose={closeLegalDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {legalDialog.mode === "edit" ? "Edit Legal Document" : "New Legal Document"}
-        </DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-          <TextField
-            label="Slug"
-            value={legalDialog.slug}
-            disabled={legalDialog.mode === "edit"}
-            onChange={(event) =>
-              setLegalDialog((previous) => ({ ...previous, slug: event.target.value }))
-            }
-          />
-          <TextField
-            label="Title"
-            value={legalDialog.title}
-            onChange={(event) =>
-              setLegalDialog((previous) => ({ ...previous, title: event.target.value }))
-            }
-          />
-          <TextField
-            label="Content"
-            value={legalDialog.content}
-            multiline
-            minRows={10}
-            onChange={(event) =>
-              setLegalDialog((previous) => ({ ...previous, content: event.target.value }))
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <AppButton variant="outlined" onClick={closeLegalDialog}>
-            Cancel
-          </AppButton>
-          <AppButton
-            disabled={isCreatingLegalDoc || isUpdatingLegalDoc}
-            onClick={handleSaveLegalDoc}
-          >
-            Save
-          </AppButton>
-        </DialogActions>
-      </Dialog>
+      <LegalDocumentWizard
+        open={legalDialog.open}
+        mode={legalDialog.mode}
+        document={legalDialog.doc}
+        saving={isCreatingLegalDoc || isUpdatingLegalDoc}
+        onClose={closeLegalDialog}
+        onSave={handleSaveLegalDoc}
+      />
     </Box>
   );
 };

@@ -31,8 +31,14 @@ interface MUITableProps {
 const MUITable: React.FC<MUITableProps> = ({ tableHead, children }) => {
   return (
     <AppCard sx={{ width: "100%", overflow: "hidden" }}>
-      <TableContainer sx={{ width: "100%", overflowX: "auto" }}>
-        <Table sx={{ minWidth: 600, width: "100%" }} aria-label="customized table">
+      <TableContainer
+        sx={{ width: "100%", maxHeight: "60dvh", overflow: "auto" }}
+      >
+        <Table
+          stickyHeader
+          sx={{ minWidth: 600, width: "100%" }}
+          aria-label="customized table"
+        >
           <TableHead>
             <TableRow>
               {tableHead.map((header, index) => (

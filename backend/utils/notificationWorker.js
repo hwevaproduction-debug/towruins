@@ -160,7 +160,9 @@ const startNotificationWorker = () => {
   }
 
   scheduledTask = cron.schedule(expression, () => {
-    void runNotificationWorker();
+    void runNotificationWorker().catch((err) => {
+      console.error(`[notification] worker error: ${err.message}`);
+    });
   });
   console.log(`[notification] Scheduled worker: ${expression}`);
 

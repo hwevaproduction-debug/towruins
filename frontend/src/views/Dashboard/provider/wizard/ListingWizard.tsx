@@ -19,7 +19,6 @@ import {
 } from "../../../../redux/api/providerApiSlice";
 import {
   useGetListingDraftQuery,
-  useUpdateListingDraftMutation,
   useAutosaveListingDraftMutation,
 } from "../../../../redux/api/listingApiSlice";
 import AccommodationStep from "./steps/AccommodationStep";
@@ -59,7 +58,6 @@ const ListingWizard = ({ open, onClose }: ListingWizardProps) => {
   } = useGetMyAccommodationQuery(undefined, { skip: !open });
 
   const { data: roomsResponse } = useGetMyRoomsQuery(undefined, { skip: !open });
-  const [updateListingDraft] = useUpdateListingDraftMutation();
   const [autosaveListingDraft] = useAutosaveListingDraftMutation();
   const isSavingRef = useRef(false);
   const pendingSaveRef = useRef(false);

@@ -13,7 +13,6 @@ const BulkImportDialog: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [validateImport] = useValidateImportMutation();
   const [createImport] = useCreateImportMutation();
-  const [createValidOnly, setCreateValidOnly] = useState(true);
   const [selectedValidRows, setSelectedValidRows] = useState<Record<number, boolean>>({});
 
   const handleFileChange = async (f: File | null) => {
@@ -63,10 +62,10 @@ const BulkImportDialog: React.FC<{
 
   const handleSubmit = async () => {
     if (!file) return;
-    // if creating only valid rows, send flag to backend via form
+    // always create only valid rows, send flag to backend via form
     const fd = new FormData();
     fd.append("file", file);
-    if (createValidOnly) fd.append("createValidOnly", "true");
+    fd.append("createValidOnly", "true");
     setIsLoading(true);
     try {
       await createImport(fd).unwrap();
@@ -158,3 +157,4 @@ const BulkImportDialog: React.FC<{
 };
 
 export default BulkImportDialog;
+

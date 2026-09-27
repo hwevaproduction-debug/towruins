@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Chip, Grid } from "@mui/material";
-import { CheckCircle2, Home, Mail } from "lucide-react";
+import { Home, Mail } from "lucide-react";
 import { Form, Formik, FormikProps } from "formik";
-import * as Yup from "yup";
 import { onKeyDown } from "../../utils";
 import { useRegisterProviderMutation } from "../../redux/api/providerApiSlice";
 import DotLoader from "../../components/Spinner/dotLoader";
@@ -42,12 +41,12 @@ const FALLBACK_HERO_IMAGES = [
 ];
 
 const BUSINESS_TYPE_OPTIONS = [
-  { label: "Hotel", value: "hotel" },
-  { label: "Lodge", value: "lodge" },
-  { label: "Bed & Breakfast", value: "bnb" },
-  { label: "Guesthouse", value: "guesthouse" },
-  { label: "Motel", value: "motel" },
-  { label: "Backpackers", value: "backpackers" },
+  { label: "Hotel", value: "HOTEL" },
+  { label: "Lodge", value: "LODGE" },
+  { label: "Bed & Breakfast", value: "BNB" },
+  { label: "Guesthouse", value: "GUEST_HOUSE" },
+  { label: "Apartment", value: "APARTMENT" },
+  { label: "Hostel", value: "HOSTEL" },
 ];
 
 const TRUST_SIGNALS = [

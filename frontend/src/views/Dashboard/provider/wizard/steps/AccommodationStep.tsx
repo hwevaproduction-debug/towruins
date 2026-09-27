@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Grid, MenuItem, Stack, TextField, Box, Typography, Chip, Tooltip } from "@mui/material";
+import { Button, Grid, MenuItem, Stack, TextField, Box, Typography, Chip } from "@mui/material";
 import { toEntityObject, useGetMyAccommodationQuery, useCreateAccommodationMutation, useUpdateAccommodationMutation } from "../../../../../redux/api/providerApiSlice";
 
 type AccommodationStepProps = {

@@ -77,7 +77,9 @@ const startReconciliationJob = () => {
   }
 
   scheduledTask = cron.schedule(expression, () => {
-    void runReconciliation();
+    void runReconciliation().catch((err) => {
+      console.error(`[reconciliation] worker error: ${err.message}`);
+    });
   });
   console.log(`[reconciliation] Scheduled payment reconciliation: ${expression}`);
 

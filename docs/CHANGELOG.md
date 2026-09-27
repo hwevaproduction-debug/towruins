@@ -1,4 +1,413 @@
+## 0927
+
+### 0608
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | legal-page-light-mode-contrast-0608 |
+| Date       | 0927 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: restore readable legal-document text contrast in light mode |
+
+#### Summary
+
+* Replaced hardcoded near-white text on legal-page paragraphs with the theme's secondary text color, consistent with legal lists and readable on white cards.
+* Kept the existing public routes and database-backed legal-document API unchanged.
+
+#### Validation
+
+* Focused legal-page tests passed, including a light-theme text/list color regression test; the frontend production build succeeded.
+* Rebuilt and recreated the staging frontend. Direct navigation and refresh succeeded on all six legal routes at a 390px viewport; each displayed its title and document text, retained the header/footer, and received HTTP 200 from its legal API request.
+* Confirmed API responses use `{ status, data: { id, slug, title, version, content, isActive, archivedAt, createdAt, updatedAt } }`, with `content` as a JSON-encoded section array. No browser console errors or failed requests were observed.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | frontend/src/components/LegalPageLayout/index.tsx |
+| Modified | frontend/src/views/Legal/LegalPages.test.tsx |
+
+## 0926
+
+### 1818
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | legal-page-api-base-1818 |
+| Date       | 0926 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: use the production same-origin API path for public legal documents |
+
+#### Summary
+
+* Fixed the production API fallback from an empty base URL to `/api/v1`.
+* Prevented public legal pages from parsing the frontend HTML fallback returned for `/legal-docs/:slug`.
+
+#### Validation
+
+* Confirmed the live `/api/v1/legal-docs/terms-of-use` endpoint returns the published document.
+* Confirmed the live `/terms` route returns the SPA shell and the previous relative API path would resolve to HTML.
+* Frontend legal-page tests and production build passed before this targeted fix.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | frontend/src/utils/index.ts |
+
+### 1806
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | source-backed-legal-pages-1804 |
+| Date       | 0926 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend/backend: publish source-backed legal pages through the existing legal-document system |
+
+#### Summary
+
+* Replaced local legal-page fallback summaries with the existing public legal-document API and added readable section, paragraph, list, heading, and safe-link rendering.
+* Rebuilt all six seed records from the tracked source agreements and policies, splitting the combined refund document into the appropriate public document types.
+* Included the Tenant Guide cancellation workflow while omitting the undated, conflicting policy-type list in tenant and provider help pages.
+* Wired legal seeding into `seed:db`; exact legacy version-one seed records receive a new version while Admin-authored documents remain untouched.
+* Admin legal-document create, update, and archive operations now invalidate the public legal-document cache.
+
+#### Validation
+
+* Eight focused frontend legal-page tests passed; frontend TypeScript check and production build passed.
+* All six seed-backed public API shapes returned HTTP 200 in a local smoke test.
+* Live database/API and browser navigation were unavailable in this environment; CRA also rejects the existing invalid proxy configuration.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | backend/package.json |
+| Modified | backend/seed/seed-legal-docs.js |
+| Modified | frontend/src/components/Footer/index.tsx |
+| Added    | frontend/src/components/LegalDocumentPage.tsx |
+| Modified | frontend/src/components/LegalPageLayout/index.tsx |
+| Modified | frontend/src/redux/api/adminApiSlice.ts |
+| Modified | frontend/src/redux/api/legalApiSlice.ts |
+| Modified | frontend/src/views/Legal/CommunityGuidelines.tsx |
+| Modified | frontend/src/views/Legal/LandlordTerms.tsx |
+| Added    | frontend/src/views/Legal/LegalPages.test.tsx |
+| Modified | frontend/src/views/Legal/PrivacyPolicy.tsx |
+| Modified | frontend/src/views/Legal/RefundPolicy.tsx |
+| Modified | frontend/src/views/Legal/TermsOfUse.tsx |
+| Modified | frontend/src/views/Legal/TrustSafety.tsx |
+
+## 0926
+
+### 1758
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | account-suspension-session-expiry-1758 |
+| Date       | 0926 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: clear authenticated sessions rejected for account suspension |
+
+#### Summary
+
+* Clear the Redux and persisted login session when a protected request receives the account-suspension 403 response.
+* Show the suspension reason on the login page after redirect; unrelated 403 responses retain the session.
+
+#### Validation
+
+* WSL staging database-backed create, edit, password reset, login, suspend, existing-session rejection, record-preservation, and reactivation flows passed.
+* Focused RTK Query and Admin Users regression tests passed.
+* Frontend type-check still reports existing errors in unrelated legal-document files.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | frontend/src/redux/api/apiSlice.ts |
+| Added    | frontend/src/redux/api/apiSlice.test.ts |
+| Modified | frontend/src/views/Login/index.tsx |
+
+### 1616
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | admin-user-management-1616 |
+| Date       | 0926 |
+| Year       | 26 |
+| Type       | Feature |
+| Status     | ✅ Implemented |
+| Scope      | Frontend/backend: complete Admin user management and account suspension |
+
+#### Summary
+
+* Added searchable, paginated Admin user management with create/edit, password reset, and confirmed suspend/reactivate actions.
+* Added a user-management view for account overview, associated listings, engagements, and stay bookings, reusing existing relationships and dashboard flows.
+* Added an account-wide suspension timestamp and enforced it at login, token verification, Google sign-in, and authenticated API access without changing provider-specific suspension.
+* Restricted user-management endpoints through the existing admin authorization middleware and kept passwords hashed and excluded from responses.
+
+#### Validation
+
+* Backend focused tests: 51 passed; one database-backed non-admin authorization test skipped because PostgreSQL was unavailable.
+* Frontend Admin dashboard tests: 15 passed; TypeScript validation passed.
+* Prisma schema validation passed.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | backend/controllers/adminUserController.js |
+| Modified | backend/controllers/authController.js |
+| Modified | backend/prisma/schema.prisma |
+| Added    | backend/prisma/migrations/20260926130000_add_user_account_suspension/migration.sql |
+| Modified | backend/routes/adminRoutes.js |
+| Modified | backend/tests/adminRoutes.auth.test.js |
+| Added    | backend/tests/adminUserController.test.js |
+| Modified | backend/tests/authController.test.js |
+| Modified | frontend/src/redux/api/adminApiSlice.ts |
+| Modified | frontend/src/views/Dashboard/Admin.tsx |
+| Modified | frontend/src/views/Dashboard/Admin.test.tsx |
+| Added    | frontend/src/views/Dashboard/components/AdminUsers.tsx |
+| Added    | frontend/src/views/Dashboard/components/AdminUsers.test.tsx |
+
+## 0924
+
+### 1248
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | admin-legal-document-guidance-wizard-1248 |
+| Date       | 0924 |
+| Year       | 26 |
+| Type       | Feature |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: guided admin legal-document creation and publishing confirmation |
+
+#### Summary
+
+* Replaced the single legal-document form with a six-step wizard covering introduction, document type, details, content, review, and save/publish confirmation.
+* Added plain-language guidance for all six existing legal-document types and preserved the existing admin API, versioning, and archive behavior.
+* Added required-field feedback, responsive step navigation, content preview, and explicit confirmation before an active version is published.
+
+#### Validation
+
+* Frontend TypeScript validation and production build were run.
+* Existing legal-document API and data model were unchanged.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ----- |
+| Modified | frontend/src/views/Dashboard/Admin.tsx |
+| Added    | frontend/src/views/Dashboard/components/LegalDocumentWizard.tsx |
+
+### 1126
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | admin-dashboard-table-viewport-1126 |
+| Date       | 0924 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: constrain admin dashboard tables to viewport-relative scroll areas |
+
+#### Summary
+
+* Constrained admin dashboard table containers to the dynamic viewport while preserving natural height for short tables.
+* Added internal vertical and horizontal scrolling with sticky headers across admin table tabs, including temporary stays and shared provider/booking tables.
+* Kept pagination, filters, search, and row actions outside the scrollable table body.
+
+#### Validation
+
+* Frontend TypeScript validation and the targeted Admin dashboard test were run.
+* Covered the shared MUI table wrapper and direct admin table containers in the implementation.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | frontend/src/views/Dashboard/Admin.tsx |
+| Modified | frontend/src/components/MUITable/index.tsx |
+| Modified | frontend/src/views/Dashboard/TemporaryStays.tsx |
+
+### 1124
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | admin-listings-autoload-1124 |
+| Date       | 0924 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: automatically load admin listings on the active listings tab |
+
+#### Summary
+
+* Triggered the existing admin listings query when the listings tab becomes active.
+* Preserved existing filters, Search behavior, pagination, loading, and empty states.
+
+#### Validation
+
+* Added frontend regression coverage for the default listings request.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | frontend/src/views/Dashboard/Admin.tsx |
+| Modified | frontend/src/views/Dashboard/Admin.test.tsx |
+
+### 1021
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | staging-postgres-restart-1021 |
+| Date       | 0924 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Docker Compose: automatically restart staging PostgreSQL with the application stack |
+
+#### Summary
+
+* Added an `unless-stopped` restart policy to the PostgreSQL service.
+* Prevented backend Prisma `P1001` restart loops after Docker or WSL restarts leave PostgreSQL stopped.
+
+#### Validation
+
+* Started PostgreSQL through WSL Compose and confirmed it reached `healthy`.
+* Confirmed the backend recovered to `healthy` and connected to PostgreSQL.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | docker-compose.yml |
+
+## 0919
+
+### 1641
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | guesthouse-provider-registration-1641 |
+| Date       | 0919 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Frontend/backend: canonical Guesthouse business type during provider self-registration |
+
+#### Summary
+
+* Updated self-registration to submit the canonical `GUEST_HOUSE` value already defined by the backend and Prisma.
+* Added regression coverage for validation and accommodation persistence.
+* Formatted the canonical value as `Guesthouse` in the provider-facing stay detail display.
+
+#### Validation
+
+* Provider controller tests passed; the test process also reported a pre-existing local Prisma Windows query-engine mismatch after the tests completed.
+* Frontend type-check could not run because the checkout does not have the frontend dependencies installed.
+* Repository search confirmed the active backend and stay-filter paths use `GUEST_HOUSE`; no separate self-registration backend enum was found.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | backend/tests/providerController.test.js |
+| Modified | frontend/src/views/ProviderSignUp/components/validationSchema.ts |
+| Modified | frontend/src/views/ProviderSignUp/index.tsx |
+| Modified | frontend/src/views/Stays/RoomDetail.tsx |
+
 # 26
+
+## 0918
+
+### 1511
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | booking-details-dialog-1511 |
+| Date       | 0918 |
+| Year       | 26 |
+| Type       | Feature |
+| Status     | ✅ Implemented |
+| Scope      | Frontend: booking details for landlord engagements and Temporary Stay provider bookings |
+
+#### Summary
+
+* Added a reusable Booking Details dialog for authorized booking recipients.
+* Landlords can inspect the tenant linked to an incoming listing engagement.
+* Temporary Stay providers can inspect the guest, dates, occupancy, contact details, and notes for a selected booking.
+
+#### Validation
+
+* Frontend type-check reached only pre-existing errors outside the changed files.
+* Production build was attempted but the checkout dependency tree is missing compatible `swiper` and webpack AJV package targets.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Added    | frontend/src/components/booking/BookingDetailsDialog.tsx |
+| Modified | frontend/src/views/Dashboard/Landlord.tsx |
+| Modified | frontend/src/views/Dashboard/provider/tabs/BookingsTab.tsx |
+
+## 0917
+
+### 1155
+
+| Field      | Value |
+| ---------- | ----- |
+| Author     | Tea |
+| Identifier | staging-backend-worker-health-1155 |
+| Date       | 0917 |
+| Year       | 26 |
+| Type       | Fix |
+| Status     | ✅ Implemented |
+| Scope      | Backend: staging startup stability and Docker API healthcheck |
+
+#### Summary
+
+* Root cause: transient PostgreSQL errors in scheduled workers became unhandled promise rejections, triggering the process shutdown handler and causing backend restart loops and nginx 502 responses.
+* Fix: scheduled reconciliation, notification, reminder, and expiry jobs now log asynchronous failures without terminating the API process.
+* Fix: Docker healthcheck now probes the existing backend `/api/v1` endpoint on `127.0.0.1:5000` with a startup grace period.
+
+#### Validation
+
+* Rebuilt and restarted the staging Docker stack through WSL.
+* Backend remained running and healthy; PostgreSQL migrations completed.
+* Five consecutive `https://localhost/api/v1` requests returned HTTP 200.
+* Failure-log search found no new `ECONNREFUSED`, `P1001`, `502`, restart-loop, or unhealthy messages after the fix.
+
+#### Files Changed
+
+| Action   | File |
+| -------- | ---- |
+| Modified | backend/utils/reconciliationJob.js |
+| Modified | backend/utils/notificationWorker.js |
+| Modified | backend/utils/reminderScanner.js |
+| Modified | backend/utils/listingExpiryScanner.js |
+| Modified | docker-compose.yml |
+
 ## 0916
 
 ### 1302
@@ -1475,3 +1884,6 @@ Aligned the auth, listing, payment, engagement, and notification flows with the 
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 
+| Action   | File |
+| -------- | ---- |
+| Modified | docker-compose.yml |
